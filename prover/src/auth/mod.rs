@@ -9,7 +9,10 @@ use axum::{
     response::IntoResponse,
 };
 use jwt::encode_jwt;
+use std::collections::HashSet;
 use std::env;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 use validation::verify_signature;
 
 pub mod jwt;
@@ -37,6 +40,29 @@ pub async fn generate_nonce(
     if params.public_key.trim().is_empty() {
         println!("Missing public key");
         return Err(ProveError::MissingPublicKey);
+    }
+
+    // Read the authorized_keys.json file
+    let mut file = File::open("prover/authorized_keys.json")
+        .await
+        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .await
+        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
+
+    let authorized_keys: HashSet<String> = serde_json::from_str::<Vec<String>>(&contents)
+        .map_err(|_| ProveError::JsonParsingFailed("authorized_keys.json".to_string()))?
+        .into_iter()
+        .collect();
+
+    // Check if the provided public key is in the authorized_keys list
+    let formatted_key = params.public_key.trim().to_lowercase();
+    println!("{}", formatted_key);
+
+    if !authorized_keys.contains(&formatted_key) {
+        println!("Unauthorized public key");
+        return Err(ProveError::UnauthorizedPublicKey);
     }
 
     let message_expiration_str = env::var("MESSAGE_EXPIRATION_TIME")
@@ -70,6 +96,29 @@ pub async fn validate_signature(
     State(state): State<AppState>,
     Json(payload): Json<ValidateSignatureRequest>,
 ) -> Result<impl IntoResponse, ProveError> {
+    println!("{}",payload.public_key);
+    // Read the authorized_keys.json file
+    let mut file = File::open("prover/authorized_keys.json")
+        .await
+        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .await
+        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
+
+    let authorized_keys: HashSet<String> = serde_json::from_str::<Vec<String>>(&contents)
+        .map_err(|_| ProveError::JsonParsingFailed("authorized_keys.json".to_string()))?
+        .into_iter()
+        .collect();
+
+    // Check if the provided public key is in the authorized_keys list
+    let formatted_key = payload.public_key.trim().to_lowercase();
+
+    if !authorized_keys.contains(&formatted_key) {
+        println!("Unauthorized public key");
+        return Err(ProveError::UnauthorizedPublicKey);
+    }
+
     let message_expiration_str = env::var("SESSION_EXPIRATION_TIME")
         .expect("SESSION_EXPIRATION_TIME environment variable not found!");
 
@@ -87,6 +136,7 @@ pub async fn validate_signature(
         ))
     })?;
 
+    
     let signature_valid = verify_signature(&payload.signature, &user_nonce, &payload.public_key);
 
     if !signature_valid {

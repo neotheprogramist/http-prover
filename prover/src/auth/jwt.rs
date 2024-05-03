@@ -1,8 +1,5 @@
 use crate::prove::ProveError;
-use axum::{
-    async_trait, extract::FromRequestParts,http::header::COOKIE,
-    http::request::Parts,
-};
+use axum::{async_trait, extract::FromRequestParts, http::header::COOKIE, http::request::Parts};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};

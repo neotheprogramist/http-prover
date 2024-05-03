@@ -11,6 +11,9 @@ pub enum ProveError {
     #[error("failed to prove state-diff-commitment")]
     StateDiffCommitment(#[from] ProcessError),
 
+    #[error("Unauthorized public key request")]
+    UnauthorizedPublicKey,
+
     #[error("failed to parse result")]
     Parse(#[from] serde_json::Error),
 
@@ -28,6 +31,12 @@ pub enum ProveError {
 
     #[error(transparent)]
     Auth(#[from] AuthError), // Embedding AuthError within ProveError
+
+    #[error("Failed to read error")]
+    FileReadError(String),
+
+    #[error("Failed to parse json")]
+    JsonParsingFailed(String),
 }
 
 impl IntoResponse for ProveError {
@@ -37,6 +46,7 @@ impl IntoResponse for ProveError {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
             ProveError::Parse(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            ProveError::UnauthorizedPublicKey => (StatusCode::UNAUTHORIZED, self.to_string()),
             ProveError::Unauthorized(_) => (StatusCode::UNAUTHORIZED, self.to_string()),
             ProveError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             ProveError::InternalServerError(_) => {
@@ -53,6 +63,10 @@ impl IntoResponse for ProveError {
                     (StatusCode::UNAUTHORIZED, "Unauthorized access".to_string())
                 }
             },
+            ProveError::FileReadError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            ProveError::JsonParsingFailed(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
         };
         let body = Json(json!({ "error": error_message }));
         (status, body).into_response()

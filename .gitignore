@@ -24,4 +24,5 @@
 /.snfoundry_cache
 
 /resources
+sdk/resources
 .cargo/config.toml

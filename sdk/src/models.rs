@@ -17,3 +17,7 @@ pub struct RequestCreateContract {
     pub url_request_quote: String,
     pub url_accept_contract: String,
 }
+
+pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
+    hex::encode(bytes)
+}
