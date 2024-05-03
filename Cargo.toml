@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [ "prover",  "sdk" ,"crates/podman","crates/utils"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace.dependencies]
+axum = { version = "0.7.5", features = ["http2", "macros", "multipart", "ws"] }
+cairo-proof-parser ={ git = "https://github.com/cartridge-gg/cairo-proof-parser.git" }
+clap = { version = "4.5.4", features = ["derive"] }
+podman ={ path = "crates/podman" }
+thiserror = "1.0.59"
+utils = { path = "crates/utils" }
+tokio = { version = "1.37.0", features = ["full"] }
+tower-http = { version = "0.5.2", features = ["timeout", "trace","decompression-br","set-header"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+serde = { version = "1.0.198", features = ["derive"] }
+serde_json = "1.0.116"

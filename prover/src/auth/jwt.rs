@@ -1,6 +1,6 @@
 use crate::prove::ProveError;
 use axum::{
-    async_trait, extract::FromRequestParts, http::header::AUTHORIZATION, http::header::COOKIE,
+    async_trait, extract::FromRequestParts,http::header::COOKIE,
     http::request::Parts,
 };
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
