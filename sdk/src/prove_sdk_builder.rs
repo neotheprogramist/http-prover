@@ -6,6 +6,8 @@ use reqwest::{cookie::Jar, Client, Url};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
+
+/// ProverSDKBuilder is a builder for constructing a ProverSDK instance.
 #[derive(Debug)]
 pub struct ProverSDKBuilder {
     client: Client,
@@ -16,6 +18,16 @@ pub struct ProverSDKBuilder {
 }
 
 impl ProverSDKBuilder {
+    /// Creates a new ProverSDKBuilder instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `url_auth` - The URL of the authentication service.
+    /// * `url_prover` - The URL of the Prover service.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new instance of ProverSDKBuilder.
     pub fn new(url_auth: &str, url_prover: &str) -> Self {
         ProverSDKBuilder {
             client: Client::new(),
@@ -26,20 +38,33 @@ impl ProverSDKBuilder {
         }
     }
 
+    /// Authenticates with the authentication service using the provided private key.
+    ///
+    /// # Arguments
+    ///
+    /// * `private_key_hex` - The hexadecimal representation of the private key.
+    ///
+    /// # Returns
+    ///
+    /// Returns a Result containing the ProverSDKBuilder instance with authentication
+    /// information if successful, or a ProverSdkErrors if an error occurs.
     pub async fn auth(mut self, private_key_hex: &str) -> Result<Self, ProverSdkErrors> {
         // Convert the hexadecimal private key string into bytes
         let private_key_bytes = hex::decode(private_key_hex)?;
         let mut private_key_array = [0u8; 32];
         private_key_array.copy_from_slice(&private_key_bytes);
         let signing_key = SigningKey::from_bytes(&private_key_array);
-        let public_key = signing_key.verifying_key();
-        println!("public_key: {}", hex::encode(public_key.as_bytes()));
         self.signing_key = Some(signing_key);
         let jwt_response = self.get_jwt_token().await?;
         self.jwt_token = Some(jwt_response.jwt_token);
         Ok(self)
     }
 
+    /// Asynchronously retrieves a JWT token from the authentication service using the provided signing key.
+    ///
+    /// # Returns
+    ///
+    /// Returns a Result containing a JWTResponse if successful, or a ProverSdkErrors if an error occurs.
     async fn get_jwt_token(&self) -> Result<JWTResponse, ProverSdkErrors> {
         let signing_key = self
             .signing_key
@@ -55,6 +80,15 @@ impl ProverSDKBuilder {
             .await
     }
 
+    /// Asynchronously retrieves a nonce from the authentication service using the provided public key.
+    ///
+    /// # Arguments
+    ///
+    /// * `public_key` - The public key used to request the nonce. dalek_ed25519 VerifyingKey
+    ///
+    /// # Returns
+    ///
+    /// Returns a Result containing a nonce string if successful, or a ProverSdkErrors if an error occurs.
     async fn get_nonce(&self, public_key: &VerifyingKey) -> Result<String, ProverSdkErrors> {
         let url_with_params = format!(
             "{}?public_key={}",
@@ -81,6 +115,17 @@ impl ProverSDKBuilder {
         Ok(nonce)
     }
 
+    /// Asynchronously validates the signature of the provided nonce and retrieves a JWT token from the authentication service.
+    ///
+    /// # Arguments
+    ///
+    /// * `public_key` - The public key used to request the nonce.
+    /// * `nonce` - The nonce received from the authentication service.
+    /// * `signed_nonce` - The signature of the nonce.
+    ///
+    /// # Returns
+    ///
+    /// Returns a Result containing a JWTResponse if successful, or a ProverSdkErrors if an error occurs.
     async fn validate_signature(
         &self,
         public_key: &VerifyingKey,
@@ -102,7 +147,6 @@ impl ProverSDKBuilder {
             .await?;
 
         let json_body: Value = response.json().await?;
-        println!("{}",json_body);
         let jwt_token = json_body["jwt_token"]
             .as_str()
             .ok_or(ProverSdkErrors::JwtTokenNotFound)?
@@ -117,6 +161,12 @@ impl ProverSDKBuilder {
         })
     }
 
+    /// Builds the ProverSDK instance.
+    ///
+    /// # Returns
+    ///
+    /// Returns a Result containing the constructed ProverSDK instance if successful,
+    /// or a ProverSdkErrors if an error occurs.
     pub fn build(self) -> Result<ProverSDK, ProverSdkErrors> {
         let _signing_key = self
             .signing_key
