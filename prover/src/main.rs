@@ -1,6 +1,6 @@
 use clap::Parser;
-use server::{start, ServerError};
-
+use server::start;
+use prove::errors::ServerError;
 mod auth;
 mod prove;
 mod server;
@@ -14,7 +14,7 @@ struct Args {
     host: String,
 
     /// Port to listen on
-    #[clap(long, default_value = "7003")]
+    #[clap(long, default_value = "3000")]
     port: u16,
 }
 

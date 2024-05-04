@@ -1,6 +1,6 @@
 use crate::models::{bytes_to_hex_string, JWTResponse};
 use crate::prover_sdk::ProverSDK;
-use crate::ProverSdkErrors;
+use crate::errors::ProverSdkErrors;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use reqwest::{cookie::Jar, Client, Url};
 use serde_json::{json, Value};

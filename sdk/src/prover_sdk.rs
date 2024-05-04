@@ -1,5 +1,5 @@
 use crate::prove_sdk_builder::ProverSDKBuilder;
-use crate::ProverSdkErrors;
+use crate::errors::ProverSdkErrors;
 use reqwest::Client;
 use serde_json::Value;
 

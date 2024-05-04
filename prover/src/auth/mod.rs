@@ -1,167 +1,54 @@
-use crate::prove::models::{
-    GenerateNonceRequest, GenerateNonceResponse, JWTResponse, Nonce, ValidateSignatureRequest,
-};
-use crate::prove::ProveError;
-use crate::server::AppState;
-use axum::{
-    extract::{Json, Query, State},
-    http::{self, HeaderMap, HeaderValue},
-    response::IntoResponse,
-};
-use jwt::encode_jwt;
-use std::collections::HashSet;
-use std::env;
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
-use validation::verify_signature;
-
 pub mod jwt;
 pub mod validation;
 
-pub const COOKIE_NAME: &str = "jwt_token";
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use axum::extract::Extension;
+    use axum::body::Body;
+    use axum::http::{Response, StatusCode};
+    use crate::prove::errors::ProveError;
+    use crate::server::AppState;
+    use crate::prove::models::GenerateNonceRequest;
+    use crate::auth::validation::generate_nonce;
+    use crate::auth::validation::is_public_key_authorized;
+    use crate::prove::models::ValidateSignatureRequest;
+    use crate::auth::validation::validate_signature;
+    use ed25519_dalek::Signature;
+    use axum::extract::State;
+    use axum::extract::Query;
+    use std::sync::Arc;
+    use std::sync::Mutex;
+    use axum::Json;
+    #[tokio::test]
+    async fn test_generate_nonce() ->Result<(),ProveError>{
+        let state = AppState {
+            nonces: Arc::new(Mutex::new(HashMap::new())),
+            prover_image_name:"sample".to_string()
+        };
+        let params = GenerateNonceRequest {
+            public_key: "05a257b53c49a28f2eb391653695e3ad2964ccec11fb30ca2b3d334187985501".to_string(),
+        };
+        let result = generate_nonce(State(state.into()), Query(params)).await;
+ 
+        assert!(result.is_ok());
 
-/// Generates a nonce for a given public key and stores it in the application state.
-///
-/// # Parameters
-///
-/// - `state`: The application state containing a mutex-guarded HashMap to store nonces.
-/// - `params`: The query parameters containing the public key for which nonce is generated.
-///
-/// # Returns
-///
-/// Returns a JSON response containing the generated nonce and its expiration time, or
-/// an error if the public key is missing.
-pub async fn generate_nonce(
-    State(state): State<AppState>,
-    Query(params): Query<GenerateNonceRequest>,
-) -> Result<Json<GenerateNonceResponse>, ProveError> {
-    println!(" Generate key");
+        let response = result.unwrap();
 
-    if params.public_key.trim().is_empty() {
-        println!("Missing public key");
-        return Err(ProveError::MissingPublicKey);
+        println!("{:?}",response);
+        Ok(())
     }
 
-    // Read the authorized_keys.json file
-    let mut file = File::open("prover/authorized_keys.json")
-        .await
-        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .await
-        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
 
-    let authorized_keys: HashSet<String> = serde_json::from_str::<Vec<String>>(&contents)
-        .map_err(|_| ProveError::JsonParsingFailed("authorized_keys.json".to_string()))?
-        .into_iter()
-        .collect();
+    #[tokio::test]
+    async fn test_is_public_key_authorized() {
+        // Test with an authorized key
+        let result = is_public_key_authorized("authorized_keys.json", "05a257b53c49a28f2eb391653695e3ad2964ccec11fb30ca2b3d334187985501").await;
+        assert!(result.is_ok());
 
-    // Check if the provided public key is in the authorized_keys list
-    let formatted_key = params.public_key.trim().to_lowercase();
-    println!("{}", formatted_key);
-
-    if !authorized_keys.contains(&formatted_key) {
-        println!("Unauthorized public key");
-        return Err(ProveError::UnauthorizedPublicKey);
+        // Test with an unauthorized key
+        let result = is_public_key_authorized("authorized_keys.json", "unauthorized_key").await;
+        assert!(result.is_err());
     }
-
-    let message_expiration_str = env::var("MESSAGE_EXPIRATION_TIME")
-        .expect("MESSAGE_EXPIRATION_TIME environment variable not found!");
-    let message_expiration_time: usize = message_expiration_str.parse::<usize>().unwrap();
-
-    let nonce: Nonce = Nonce::new(32);
-    let nonce_string = nonce.to_string();
-    let mut nonces: std::sync::MutexGuard<'_, std::collections::HashMap<String, String>> =
-        state.nonces.lock().unwrap();
-    let formatted_key = params.public_key.trim().to_lowercase();
-    nonces.insert(formatted_key.clone(), nonce_string);
-
-    Ok(Json(GenerateNonceResponse {
-        nonce,
-        expiration: message_expiration_time,
-    }))
-}
-
-/// Validates the signature provided in the request payload and generates a JWT token if the signature is valid.
-///
-/// # Parameters
-///
-/// - `state`: The application state containing nonce information stored in a mutex-guarded HashMap.
-/// - `payload`: JSON payload containing the public key and signature to be validated.
-///
-/// # Returns
-///
-/// Returns a tuple containing HTTP headers and a JSON response with a JWT token and its expiration time if the signature is valid.
-pub async fn validate_signature(
-    State(state): State<AppState>,
-    Json(payload): Json<ValidateSignatureRequest>,
-) -> Result<impl IntoResponse, ProveError> {
-    println!("{}", payload.public_key);
-    // Read the authorized_keys.json file
-    let mut file = File::open("prover/authorized_keys.json")
-        .await
-        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .await
-        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
-
-    let authorized_keys: HashSet<String> = serde_json::from_str::<Vec<String>>(&contents)
-        .map_err(|_| ProveError::JsonParsingFailed("authorized_keys.json".to_string()))?
-        .into_iter()
-        .collect();
-
-    // Check if the provided public key is in the authorized_keys list
-    let formatted_key = payload.public_key.trim().to_lowercase();
-
-    if !authorized_keys.contains(&formatted_key) {
-        println!("Unauthorized public key");
-        return Err(ProveError::UnauthorizedPublicKey);
-    }
-
-    let message_expiration_str = env::var("SESSION_EXPIRATION_TIME")
-        .expect("SESSION_EXPIRATION_TIME environment variable not found!");
-
-    let session_expiration_time: usize = message_expiration_str.parse::<usize>().unwrap();
-
-    let nonces = state
-        .nonces
-        .lock()
-        .map_err(|_| ProveError::InternalServerError("Failed to lock state".to_string()))?;
-
-    let user_nonce = nonces.get(&payload.public_key).ok_or_else(|| {
-        ProveError::NotFound(format!(
-            "Nonce not found for the provided public key: {}",
-            &payload.public_key
-        ))
-    })?;
-
-    let signature_valid = verify_signature(&payload.signature, &user_nonce, &payload.public_key);
-
-    if !signature_valid {
-        return Err(ProveError::Unauthorized("Invalid signature".to_string()));
-    }
-
-    let expiration = chrono::Utc::now() + chrono::Duration::seconds(session_expiration_time as i64);
-    let token = encode_jwt(&payload.public_key, expiration.timestamp() as usize)
-        .map_err(|_| ProveError::InternalServerError("JWT generation failed".to_string()))?;
-    let cookie_value = format!(
-        "{}={}; HttpOnly; Secure; Path=/; Max-Age={}",
-        COOKIE_NAME, token, session_expiration_time
-    );
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        http::header::SET_COOKIE,
-        HeaderValue::from_str(&cookie_value).map_err(|_| {
-            ProveError::InternalServerError("Failed to set cookie header".to_string())
-        })?,
-    );
-
-    Ok((
-        headers,
-        Json(JWTResponse {
-            jwt_token: token,
-            expiration: session_expiration_time,
-        }),
-    ))
 }

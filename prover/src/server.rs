@@ -1,29 +1,15 @@
 use axum::{routing::get, Router};
-
 use std::{
-    net::{AddrParseError, SocketAddr},
+    net::SocketAddr,
     time::Duration,
 };
-use thiserror::Error;
-use tokio::net::TcpListener;
-use tokio::time::sleep;
-use tower_http::timeout::TimeoutLayer;
-use tower_http::trace::TraceLayer;
+use tokio::{net::TcpListener,time::sleep};
+use tower_http::{timeout::TimeoutLayer,trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utils::shutdown::shutdown_signal;
-
 use crate::{prove, Args};
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-
-#[derive(Debug, Error)]
-pub enum ServerError {
-    #[error("server error")]
-    Server(#[from] std::io::Error),
-
-    #[error("failed to parse address")]
-    AddressParse(#[from] AddrParseError),
-}
+use std::{collections::HashMap,sync::{Arc, Mutex}};
+use prove::errors::ServerError;
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -53,8 +39,6 @@ pub async fn start(args: &Args) -> Result<(), ServerError> {
         .route("/forever", get(std::future::pending::<()>))
         .layer((
             TraceLayer::new_for_http(),
-            // Graceful shutdown will wait for outstanding requests to complete. Add a timeout so
-            // requests don't hang forever.
             TimeoutLayer::new(Duration::from_secs(60)),
         ));
 
