@@ -24,7 +24,7 @@ impl ProverSDK {
         ProverSDKBuilder::new(url_auth, url_prover)
     }
 
-    /// Proves the provided data to the Prover service.
+    /// Sends the provided data to the Prover service and returns the prover output.
     ///
     /// # Arguments
     ///
@@ -35,14 +35,32 @@ impl ProverSDK {
     /// Returns a `Result` containing a string representing the response from the Prover service
     /// if successful, or a `ProverSdkErrors` if an error occurs.
     pub async fn prove(&self, data: Value) -> Result<String, ProverSdkErrors> {
-        let response = self
-            .client
-            .post(&self.url_prover)
-            .json(&data)
-            .send()
-            .await?;
-        let response_data = response.text().await?;
-        println!("{}", response_data);
+        let response = match self.client.post(&self.url_prover).json(&data).send().await {
+            Ok(response) => response,
+            Err(reqwest_error) => {
+                return Err(ProverSdkErrors::ProveRequestFailed(format!(
+                    "Failed to send HTTP request to URL: {}. Error: {}",
+                    &self.url_prover, reqwest_error
+                )));
+            }
+        };
+        if !response.status().is_success() {
+            return Err(ProverSdkErrors::ProveResponseError(format!(
+                "Received unsuccessful status code ({}) from URL: {}",
+                response.status(), &self.url_prover
+            )));
+        }
+        let response_data = match response.text().await {
+            Ok(response_text) => {
+
+                response_text},
+            Err(text_error) => {
+                return Err(ProverSdkErrors::ProveResponseError(format!(
+                    "Failed to read response text from URL: {}. Error: {}",
+                    &self.url_prover, text_error
+                )));
+            }
+        };
         Ok(response_data)
     }
 }

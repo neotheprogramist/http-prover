@@ -6,7 +6,6 @@ use reqwest::{cookie::Jar, Client, Url};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
-
 /// ProverSDKBuilder is a builder for constructing a ProverSDK instance.
 #[derive(Debug)]
 pub struct ProverSDKBuilder {
@@ -96,16 +95,37 @@ impl ProverSDKBuilder {
             bytes_to_hex_string(public_key.as_bytes())
         );
 
-        let response = self.client.get(&url_with_params).send().await?;
+        let response = match self.client.get(&url_with_params).send().await {
+            Ok(response) => response,
+            Err(reqwest_error) => {
+                return Err(ProverSdkErrors::NonceRequestFailed(format!(
+                    "Failed to send HTTP request to URL: {}. Error: {}",
+                    url_with_params, reqwest_error
+                )));
+            }
+        };
         if !response.status().is_success() {
             // If the status is not successful, return an appropriate error
             return Err(ProverSdkErrors::NonceRequestFailed(format!(
-                "Failed to get nonce: {}",
+                "Failed to get nonce from URL: {} with status code: {}",
+                url_with_params,
                 response.status()
             )));
         }
-        let response_text = response.text().await?;
-        let json_body: Value = serde_json::from_str(&response_text)?;
+
+        let response_text = response.text().await.map_err(|e| {
+            ProverSdkErrors::NonceRequestFailed(format!(
+                "Failed to read response text from URL: {}. Error: {}",
+                url_with_params, e
+            ))
+        })?;   
+
+        let json_body: Value = serde_json::from_str(&response_text).map_err(|e| {
+            ProverSdkErrors::JsonParsingFailed(format!(
+                "Failed to parse JSON response from URL: {}. Error: {}",
+                url_with_params, e
+            ))
+        })?;
 
         let nonce = json_body["nonce"]
             .as_str()
@@ -138,15 +158,39 @@ impl ProverSDKBuilder {
             "signature": bytes_to_hex_string(&signed_nonce.to_bytes()),
         });
 
-        let response = self
-            .client
+        let response = match self.client
             .post(&self.url_auth)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .json(&data)
             .send()
-            .await?;
+            .await 
+            {
+            Ok(response) => response,
+            Err(reqwest_error) => {
+                return Err(ProverSdkErrors::ValidateSignatureRequestFailed(format!(
+                    "Failed to send HTTP request to URL: {}. Error: {}",
+                    &self.url_auth, reqwest_error
+                )));
+            }
+        };
+        
+        if !response.status().is_success() {
+            return Err(ProverSdkErrors::ValidateSignatureResponseError(format!(
+                "Received unsuccessful status code ({}) from URL: {}",
+                response.status(), &self.url_auth
+            )));
+        }
 
-        let json_body: Value = response.json().await?;
+        let json_body: Value = match response.json().await {
+            Ok(json_body) => json_body,
+            Err(json_error) => {
+                return Err(ProverSdkErrors::JsonParsingFailed(format!(
+                    "Failed to parse JSON response from URL: {}. Error: {}",
+                    &self.url_auth, json_error
+                )));
+            }
+        };
+
         let jwt_token = json_body["jwt_token"]
             .as_str()
             .ok_or(ProverSdkErrors::JwtTokenNotFound)?
@@ -183,7 +227,8 @@ impl ProverSDKBuilder {
 
         let client = reqwest::Client::builder()
             .cookie_provider(Arc::new(jar))
-            .build()?;
+            .build().map_err(|e| ProverSdkErrors::ReqwestBuildError(format!("Failed to build reqwest client: {}", e)))?;
+
 
         Ok(ProverSDK {
             client,

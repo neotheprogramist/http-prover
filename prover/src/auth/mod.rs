@@ -96,7 +96,7 @@ pub async fn validate_signature(
     State(state): State<AppState>,
     Json(payload): Json<ValidateSignatureRequest>,
 ) -> Result<impl IntoResponse, ProveError> {
-    println!("{}",payload.public_key);
+    println!("{}", payload.public_key);
     // Read the authorized_keys.json file
     let mut file = File::open("prover/authorized_keys.json")
         .await
@@ -136,7 +136,6 @@ pub async fn validate_signature(
         ))
     })?;
 
-    
     let signature_valid = verify_signature(&payload.signature, &user_nonce, &payload.public_key);
 
     if !signature_valid {
