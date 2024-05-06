@@ -1,15 +1,15 @@
+use crate::{prove, Args};
 use axum::{routing::get, Router};
+use prove::errors::ServerError;
 use std::{
-    net::SocketAddr,
-    time::Duration,
+    collections::HashMap,
+    sync::{Arc, Mutex},
 };
-use tokio::{net::TcpListener,time::sleep};
-use tower_http::{timeout::TimeoutLayer,trace::TraceLayer};
+use std::{net::SocketAddr, time::Duration};
+use tokio::{net::TcpListener, time::sleep};
+use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utils::shutdown::shutdown_signal;
-use crate::{prove, Args};
-use std::{collections::HashMap,sync::{Arc, Mutex}};
-use prove::errors::ServerError;
 
 #[derive(Debug, Clone)]
 pub struct AppState {

@@ -1,6 +1,6 @@
 use clap::Parser;
-use server::start;
 use prove::errors::ServerError;
+use server::start;
 mod auth;
 mod prove;
 mod server;

@@ -1,4 +1,4 @@
-use crate::prove::errors::{ProveError,AuthError};
+use crate::prove::errors::{AuthError, ProveError};
 use axum::{async_trait, extract::FromRequestParts, http::header::COOKIE, http::request::Parts};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use once_cell::sync::Lazy;
@@ -29,9 +29,10 @@ where
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         // Extract the 'Cookie' header
-        let header_value = parts.headers.get(COOKIE).ok_or(ProveError::Auth(
-            AuthError::MissingAuthorizationHeader,
-        ))?;
+        let header_value = parts
+            .headers
+            .get(COOKIE)
+            .ok_or(ProveError::Auth(AuthError::MissingAuthorizationHeader))?;
 
         // Convert the header value to a string
         let cookie_str = header_value
@@ -51,9 +52,9 @@ where
             .collect();
 
         // Extract the JWT token from the cookies
-        let token = cookies.get("jwt_token").ok_or(ProveError::Auth(
-            AuthError::MissingAuthorizationHeader,
-        ))?;
+        let token = cookies
+            .get("jwt_token")
+            .ok_or(ProveError::Auth(AuthError::MissingAuthorizationHeader))?;
 
         let token_data = decode::<Claims>(token, &KEYS.decoding, &Validation::default())
             .map_err(|_| ProveError::Auth(AuthError::InvalidToken))?;

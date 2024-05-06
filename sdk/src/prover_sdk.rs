@@ -1,5 +1,5 @@
-use crate::prove_sdk_builder::ProverSDKBuilder;
 use crate::errors::ProverSdkErrors;
+use crate::prove_sdk_builder::ProverSDKBuilder;
 use reqwest::Client;
 use serde_json::Value;
 
@@ -47,13 +47,12 @@ impl ProverSDK {
         if !response.status().is_success() {
             return Err(ProverSdkErrors::ProveResponseError(format!(
                 "Received unsuccessful status code ({}) from URL: {}",
-                response.status(), &self.url_prover
+                response.status(),
+                &self.url_prover
             )));
         }
         let response_data = match response.text().await {
-            Ok(response_text) => {
-
-                response_text},
+            Ok(response_text) => response_text,
             Err(text_error) => {
                 return Err(ProverSdkErrors::ProveResponseError(format!(
                     "Failed to read response text from URL: {}. Error: {}",

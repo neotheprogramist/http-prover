@@ -1,8 +1,8 @@
-use reqwest::Error as ReqwestError;
-use thiserror::Error;
 use hex::FromHexError;
-use url::ParseError;
+use reqwest::Error as ReqwestError;
 use std::env::VarError;
+use thiserror::Error;
+use url::ParseError;
 #[derive(Debug, Error)]
 pub enum ProverSdkErrors {
     #[error("HTTP request failed: {0}")]
@@ -25,7 +25,7 @@ pub enum ProverSdkErrors {
 
     #[error("JSON parsing failed: {0}")]
     ReqwestBuildError(String),
-    
+
     #[error("Failed to serialize")]
     SerdeError(#[from] serde_json::Error),
 

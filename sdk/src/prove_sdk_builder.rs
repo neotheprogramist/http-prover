@@ -1,6 +1,6 @@
+use crate::errors::ProverSdkErrors;
 use crate::models::{bytes_to_hex_string, JWTResponse};
 use crate::prover_sdk::ProverSDK;
-use crate::errors::ProverSdkErrors;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use reqwest::{cookie::Jar, Client, Url};
 use serde_json::{json, Value};
@@ -48,7 +48,6 @@ impl ProverSDKBuilder {
     /// Returns a Result containing the ProverSDKBuilder instance with authentication
     /// information if successful, or a ProverSdkErrors if an error occurs.
     pub async fn auth(mut self, private_key_hex: &str) -> Result<Self, ProverSdkErrors> {
-        
         // Convert the hexadecimal private key string into bytes
         let private_key_bytes = hex::decode(private_key_hex)?;
         let mut private_key_array = [0u8; 32];
@@ -120,7 +119,7 @@ impl ProverSDKBuilder {
                 "Failed to read response text from URL: {}. Error: {}",
                 url_with_params, e
             ))
-        })?;   
+        })?;
 
         let json_body: Value = serde_json::from_str(&response_text).map_err(|e| {
             ProverSdkErrors::JsonParsingFailed(format!(
@@ -160,13 +159,14 @@ impl ProverSDKBuilder {
             "signature": bytes_to_hex_string(&signed_nonce.to_bytes()),
         });
 
-        let response = match self.client
+        let response = match self
+            .client
             .post(&self.url_auth)
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .json(&data)
             .send()
-            .await 
-            {
+            .await
+        {
             Ok(response) => response,
             Err(reqwest_error) => {
                 return Err(ProverSdkErrors::ValidateSignatureRequestFailed(format!(
@@ -175,11 +175,12 @@ impl ProverSDKBuilder {
                 )));
             }
         };
-        
+
         if !response.status().is_success() {
             return Err(ProverSdkErrors::ValidateSignatureResponseError(format!(
                 "Received unsuccessful status code ({}) from URL: {}",
-                response.status(), &self.url_auth
+                response.status(),
+                &self.url_auth
             )));
         }
 
@@ -229,8 +230,10 @@ impl ProverSDKBuilder {
 
         let client = reqwest::Client::builder()
             .cookie_provider(Arc::new(jar))
-            .build().map_err(|e| ProverSdkErrors::ReqwestBuildError(format!("Failed to build reqwest client: {}", e)))?;
-
+            .build()
+            .map_err(|e| {
+                ProverSdkErrors::ReqwestBuildError(format!("Failed to build reqwest client: {}", e))
+            })?;
 
         Ok(ProverSDK {
             client,
