@@ -1,11 +1,14 @@
 use crate::server::AppState;
 use axum::{routing::get, routing::post, Router};
+mod differ;
 pub mod errors;
+mod merger;
 pub mod models;
-mod state_diff_commitment;
 
 pub fn router() -> Router {
-    Router::new().route("/state-diff-commitment", post(state_diff_commitment::root))
+    Router::new()
+        .route("/differ", post(differ::root))
+        .route("/merger", post(merger::root))
 }
 
 pub fn auth(app_state: &AppState) -> Router {
@@ -21,8 +24,7 @@ mod tests {
     use crate::auth::jwt::Claims;
     use errors::ProveError;
     use serde_json::Value;
-    use state_diff_commitment::root;
-    use std::env;
+    use differ::root;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
     #[tokio::test]
