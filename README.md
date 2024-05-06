@@ -4,8 +4,16 @@ The Prover SDK is a Rust library for interacting with the Prover service. It pro
 
 ## Installation
 
-Add the following dependency to your `Cargo.toml` file:
+To run the sdk first make sure prover/authorized_keys.json contains your public_key.
 
+Run the following command in your terminal:
+
+```bash
+cargo run -p prover
+```
+
+Note:
+Tests from the sdk lib.rs file should be run separately.
 
 
 ## Usage
