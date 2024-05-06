@@ -1,4 +1,4 @@
-use ed25519_dalek::{PublicKey, Signature};
+use ed25519_dalek:: Signature;
 use crate::prove::models::{GenerateNonceRequest, GenerateNonceResponse, JWTResponse, Nonce, ValidateSignatureRequest};
 use crate::prove::errors::ProveError;
 use crate::server::AppState;
@@ -10,7 +10,7 @@ use axum::{
 use crate::auth::jwt::encode_jwt;
 use std::{env,collections::HashSet};
 use tokio::{fs::File,io::AsyncReadExt};
-
+use ed25519_dalek::VerifyingKey;
 pub const COOKIE_NAME: &str = "jwt_token";
 
 /// Generates a nonce for a given public key and stores it in the application state.
@@ -31,7 +31,6 @@ pub async fn generate_nonce(
     if params.public_key.trim().is_empty() {
         return Err(ProveError::MissingPublicKey);
     }
-
     is_public_key_authorized("authorized_keys.json",&params.public_key).await?;
 
     let message_expiration_str = env::var("MESSAGE_EXPIRATION_TIME")
@@ -40,9 +39,11 @@ pub async fn generate_nonce(
 
     let nonce: Nonce = Nonce::new(32);
     let nonce_string = nonce.to_string();
+
     let mut nonces: std::sync::MutexGuard<'_, std::collections::HashMap<String, String>> =
         state.nonces.lock().unwrap();
     let formatted_key = params.public_key.trim().to_lowercase();
+    
     nonces.insert(formatted_key.clone(), nonce_string);
 
     Ok(Json(GenerateNonceResponse {
@@ -123,16 +124,26 @@ pub async fn validate_signature(
 ///
 /// Returns `true` if the signature is valid; `false` otherwise.
 pub fn verify_signature(signature: &Signature, nonce: &str, public_key_hex: &str) -> bool {
-    let public_key_bytes = match hex::decode(public_key_hex) {
+
+    let public_key_bytes=match hex::decode(&public_key_hex){
         Ok(bytes) => bytes,
         Err(_) => return false,
     };
 
-    let public_key = match PublicKey::from_bytes(&public_key_bytes) {
+    let mut public_key_array = [0u8; 32];
+    public_key_array.copy_from_slice(&public_key_bytes[..32]); // Copy the first 32 bytes
+
+
+    let public_key = match VerifyingKey::from_bytes(&public_key_array) {
         Ok(pk) => pk,
         Err(_) => return false,
     };
-
+    println!("VERIFIER verify_signature");
+    println!("Public key: {}", public_key_hex);
+    println!("Signature: {}",signature.to_string());
+    for byte in &public_key_array {
+        print!("{:02X} ", byte);
+    }    
     public_key
         .verify_strict(nonce.as_bytes(), &signature)
         .is_ok()
@@ -144,17 +155,19 @@ pub fn verify_signature(signature: &Signature, nonce: &str, public_key_hex: &str
 ///
 /// Returns a HashSet containing the authorized keys, or an error if reading the file fails.
 pub async fn is_public_key_authorized(path:&str,public_key:&str) -> Result<(), ProveError> {
-   
+
     let formatted_key = public_key.trim().to_lowercase();
-    
+
     // Read the authorized_keys.json file
     let mut file = File::open(path)
         .await
-        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
+        .map_err(|e| ProveError::FileReadError(e))?;
     let mut contents = String::new();
+
+    
     file.read_to_string(&mut contents)
         .await
-        .map_err(|_| ProveError::FileReadError("authorized_keys.json".to_string()))?;
+        .map_err(|e| ProveError::FileReadError(e))?;
 
     let authorized_keys: HashSet<String> = serde_json::from_str::<Vec<String>>(&contents)
         .map_err(|_| ProveError::JsonParsingFailed("authorized_keys.json".to_string()))?

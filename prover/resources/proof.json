@@ -1,0 +1,8 @@
+Status Code: 200
+Making a request to: http://localhost:7003/auth?public_key=b78521db312fb772e2cd34f6489951d8a4141d735be08b2e7e9787035c35070d
+{'nonce': '0x4cee5369cabe8e6c889ac3dc13a639986ac27992baf75c3e72e827bb2f476700', 'expiration': 60}
+Status Code: 200
+Making a request to: http://localhost:7003/auth
+Status Code: 400
+Making a request to: http://localhost:7003/prove/state-diff-commitment
+{"error":"Invalid token"}

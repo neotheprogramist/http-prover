@@ -48,10 +48,12 @@ impl ProverSDKBuilder {
     /// Returns a Result containing the ProverSDKBuilder instance with authentication
     /// information if successful, or a ProverSdkErrors if an error occurs.
     pub async fn auth(mut self, private_key_hex: &str) -> Result<Self, ProverSdkErrors> {
+        
         // Convert the hexadecimal private key string into bytes
         let private_key_bytes = hex::decode(private_key_hex)?;
         let mut private_key_array = [0u8; 32];
         private_key_array.copy_from_slice(&private_key_bytes);
+
         let signing_key = SigningKey::from_bytes(&private_key_array);
         self.signing_key = Some(signing_key);
         let jwt_response = self.get_jwt_token().await?;

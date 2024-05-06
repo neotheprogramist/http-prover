@@ -7,23 +7,25 @@ pub mod errors;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::errors::ProverSdkErrors;
     use crate::prover_sdk::ProverSDK;
     use serde_json::Value;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt; 
+    use std::env;
+
+    //Note: Run tests separately because all are async
 
     #[tokio::test]
     async fn test_prover()-> Result<(), ProverSdkErrors> {
-        // Arrange: Set up any necessary data or dependencies
-        let private_key_hex = "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740";
+        let private_key_hex : String= env::var("PRIVATE_KEY")?;
+      
         let url_auth =  "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prove/state-diff-commitment";
     
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
-             .auth(private_key_hex).await?.build()?;
+             .auth(&private_key_hex).await?.build()?;
          
          let data = read_json_file("resources/input.json").await?;
  
@@ -31,7 +33,7 @@ mod tests {
 
         // If authentication fails, print out the error message
         assert!(
-            proof.is_err(),
+            proof.is_ok(),
             "Failed to prove with invalid url"
         );
         // If authentication fails, print out the error message for debugging purposes
@@ -42,15 +44,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_invalid_private_key_auth() {
+    async fn test_invalid_private_key_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let private_key_hex = "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec741"; // Provide an invalid private key
+        let private_key_hex : String= "invalid_key".to_string();
         let url_auth = "http://localhost:3000/auth";
         let url_prover = "http://localhost:3000/prove/state-diff-commitment";
 
         // Act: Attempt to authenticate with the invalid private key
         let result = ProverSDK::new(url_auth, url_prover)
-            .auth(private_key_hex)
+            .auth(&private_key_hex)
             .await;
 
         // Assert: Check that authentication fails
@@ -61,6 +63,8 @@ mod tests {
         if let Err(err) = result {
             println!("Authentication error: {}", err);
         }
+        Ok(()) 
+
     }
 
     #[tokio::test]
@@ -86,15 +90,15 @@ mod tests {
 
 
     #[tokio::test]
-    async fn test_valid_private_key_auth() {
+    async fn test_valid_private_key_auth()-> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let private_key_hex = "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740";
+        let private_key_hex : String= env::var("PRIVATE_KEY")?;
         let url_auth = "http://localhost:3000/auth";
         let url_prover = "http://localhost:3000/prove/state-diff-commitment";
 
         // Act: Attempt to authenticate with the valid private key
         let result = ProverSDK::new(url_auth, url_prover)
-            .auth(private_key_hex)
+            .auth(&private_key_hex)
             .await;
 
         // Assert: Check that authentication succeeds
@@ -102,18 +106,20 @@ mod tests {
             result.is_ok(),
             "Expected authentication to succeed with valid private key"
         );
+        Ok(()) 
+
     }
 
     #[tokio::test]
-    async fn test_invalid_url_auth() {
+    async fn test_invalid_url_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let private_key_hex = "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740";
+        let private_key_hex : String= env::var("PRIVATE_KEY")?;
         let url_auth = "invalid_url_auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prove/state-diff-commitment";
     
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let result = ProverSDK::new(url_auth, url_prover)
-            .auth(private_key_hex)
+            .auth(&private_key_hex)
             .await;
         // Assert: Check that authentication fails due to invalid URL
         assert!(
@@ -124,18 +130,19 @@ mod tests {
         if let Err(err) = result {
             println!("Error message: {}", err);
         }
+        Ok(()) 
     }
 
     #[tokio::test]
     async fn test_invalid_url_prover()-> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let private_key_hex = "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740";
+        let private_key_hex : String= env::var("PRIVATE_KEY")?;
         let url_auth =  "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prover_invalid";
     
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
-            .auth(private_key_hex).await?.build()?;
+            .auth(&private_key_hex).await?.build()?;
         
         let data = read_json_file("resources/input.json").await?;
 
@@ -150,14 +157,13 @@ mod tests {
     }
     #[tokio::test]
     async fn test_invalid_url_without_base_prover()-> Result<(), ProverSdkErrors> {
-        // Arrange: Set up any necessary data or dependencies
-        let private_key_hex = "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740";
+        let private_key_hex : String= env::var("PRIVATE_KEY")?;
         let url_auth =  "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "invalid_url_prover";
     
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
-            .auth(private_key_hex).await?.build();
+            .auth(&private_key_hex).await?.build();
 
         assert!(
             sdk.is_err(),

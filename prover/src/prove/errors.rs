@@ -1,9 +1,9 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
+use hex::FromHexError;
 use podman::process::ProcessError;
 use thiserror::Error;
 use serde_json::json;
-use std::net::AddrParseError;
-
+use std::{env::VarError, net::AddrParseError};
 #[derive(Debug, Error)]
 pub enum ServerError {
     #[error("server error")]
@@ -20,7 +20,12 @@ pub enum ProveError {
 
     #[error("Unauthorized public key request")]
     UnauthorizedPublicKey,
-
+    
+    #[error("HexDecode Error")]
+    HexDecodeError(#[from] FromHexError),
+    #[error("Failed to read env variable")]
+    EnvVarFailed(#[from] VarError),
+    
     #[error("failed to parse result")]
     Parse(#[from] serde_json::Error),
 
@@ -39,11 +44,11 @@ pub enum ProveError {
     #[error(transparent)]
     Auth(#[from] AuthError), // Embedding AuthError within ProveError
 
-    #[error("Failed to read error")]
-    FileReadError(String),
-
     #[error("Failed to parse json")]
     JsonParsingFailed(String),
+
+    #[error("File read error")]
+    FileReadError(#[from] std::io::Error)
 }
 
 impl IntoResponse for ProveError {
@@ -72,6 +77,12 @@ impl IntoResponse for ProveError {
             },
             ProveError::FileReadError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             ProveError::JsonParsingFailed(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
+            ProveError::EnvVarFailed(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
+            ProveError::HexDecodeError(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
             }
         };

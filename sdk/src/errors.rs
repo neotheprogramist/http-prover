@@ -2,11 +2,14 @@ use reqwest::Error as ReqwestError;
 use thiserror::Error;
 use hex::FromHexError;
 use url::ParseError;
-
+use std::env::VarError;
 #[derive(Debug, Error)]
 pub enum ProverSdkErrors {
     #[error("HTTP request failed: {0}")]
     RequestFailed(#[from] ReqwestError),
+
+    #[error("Failed to read env variable: {0}")]
+    EnvVarFailed(#[from] VarError),
 
     #[error("JSON parsing failed: {0}")]
     JsonParsingFailed(String),
