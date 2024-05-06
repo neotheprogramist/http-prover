@@ -6,9 +6,6 @@ The Prover SDK is a Rust library for interacting with the Prover service. It pro
 
 Add the following dependency to your `Cargo.toml` file:
 
-```toml
-[dependencies]
-prover_sdk = { git = "https://github.com/example/prover-sdk-rs.git" }
 
 
 ## Usage
@@ -16,7 +13,7 @@ prover_sdk = { git = "https://github.com/example/prover-sdk-rs.git" }
 To use the SDK, follow these steps:
 
 Authenticate with the Prover service using your private key and the authentication URL:
-
+```
     #[tokio::main]
     async fn main() -> Result<(), ProverSdkErrors> {
         let private_key_hex : String= env::var("PRIVATE_KEY")?;
@@ -30,9 +27,10 @@ Authenticate with the Prover service using your private key and the authenticati
         // Handle authentication result
         Ok(())
     }
-
+```
 Use the SDK to prove data:
 
+```
     #[tokio::main]
     async fn main() -> Result<(), ProverSdkErrors> {
         // Authentication code goes here...
@@ -44,10 +42,11 @@ Use the SDK to prove data:
         // Handle proof result
         Ok(())
     }
+```
 
 Handle errors using the provided error types:
 
-
+```
     #[tokio::main]
     async fn main() -> Result<(), ProverSdkErrors> {
         // Authentication code goes here...
@@ -68,3 +67,4 @@ Handle errors using the provided error types:
 
         Ok(())
     }
+```
