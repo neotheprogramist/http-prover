@@ -1,12 +1,12 @@
 use crate::{prove, Args};
-use axum::{routing::get, Router};
+use axum::Router;
 use prove::errors::ServerError;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
 use std::{net::SocketAddr, time::Duration};
-use tokio::{net::TcpListener, time::sleep};
+use tokio::net::TcpListener;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utils::shutdown::shutdown_signal;
@@ -35,11 +35,9 @@ pub async fn start(args: &Args) -> Result<(), ServerError> {
     let app = Router::new()
         .nest("/", prove::auth(&state))
         .nest("/prove", prove::router())
-        .route("/slow", get(|| sleep(Duration::from_secs(5))))
-        .route("/forever", get(std::future::pending::<()>))
         .layer((
             TraceLayer::new_for_http(),
-            TimeoutLayer::new(Duration::from_secs(60)),
+            TimeoutLayer::new(Duration::from_secs(300)),
         ));
 
     let address: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
