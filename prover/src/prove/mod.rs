@@ -22,11 +22,12 @@ pub fn auth(app_state: &AppState) -> Router {
 mod tests {
     use super::*;
     use crate::auth::jwt::Claims;
+    use differ::root;
     use errors::ProveError;
     use serde_json::Value;
-    use differ::root;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
+
     #[tokio::test]
     async fn test_root_with_input_json() {
         // Read input data from resources/input.json
