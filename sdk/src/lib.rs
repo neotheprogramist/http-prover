@@ -17,10 +17,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_prover() -> Result<(), ProverSdkErrors> {
-        
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
         let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prove";
+
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
             .auth(&private_key_hex)
@@ -28,7 +28,12 @@ mod tests {
             .build()?;
         let data = read_json_file("../prover/resources/input.json").await?;
         let proof = sdk.prove(data).await;
-        dbg!(proof.unwrap());
+        // If authentication fails, print out the error message
+        assert!(proof.is_ok(), "Failed to prove with invalid url");
+        // If authentication fails, print out the error message for debugging purposes
+        if let Err(err) = proof {   
+            println!(" error: {}", err);
+        }
         Ok(())
     }
 

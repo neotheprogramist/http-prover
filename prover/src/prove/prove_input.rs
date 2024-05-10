@@ -17,8 +17,10 @@ pub struct CompiledProgram {
     pub prime: String,
     pub reference_manager: serde_json::Value,
 }
+#[cfg(test)]
 mod tests{
-    use crate::prove::prove_input::{CompiledProgram, ProveInput};
+    use crate::prove::prove_input::CompiledProgram;
+    use crate::prove::prove_input::ProveInput;
 
 #[test]
 fn test_deserialize_compiled_program() -> serde_json::Result<()> {
@@ -64,7 +66,7 @@ fn test_deserialize_compiled_program() -> serde_json::Result<()> {
                 }
             }
         },
-        "hints": {},
+        "hints": [],
         "identifiers": {
             "__main__.__end__": {
                 "pc": 4,
@@ -271,7 +273,6 @@ fn test_serialize_prove_input() -> serde_json::Result<()> {
     let prove_input =  ProveInput{program:compiled_program,
     program_input: serde_json::to_value(&input).unwrap()};
     let serialized = &serde_json::to_string(&prove_input).unwrap(); 
-    println!("{}",serde_json::to_string(&serialized).unwrap());
     let deserialized:ProveInput = serde_json::from_str(&serialized).unwrap();
     assert_eq!(deserialized,prove_input);
     Ok(())

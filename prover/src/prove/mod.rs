@@ -19,7 +19,6 @@ pub async fn root(_claims: Claims, Json(program_input): Json<ProveInput>) -> Res
     let runner = podman::runner::PodmanRunner::new("docker.io/chudas/stone5-poseidon3:latest");
     let v = serde_json::to_string(&program_input)?;
     let result: String = runner.run(&v).await?;
-    println!("{:?}",result);
     let proof: serde_json::Value = serde_json::from_str(&result)?;
     let final_result = serde_json::to_string_pretty(&proof)?;
     Ok(final_result)
