@@ -8,10 +8,10 @@ pub mod errors;
 mod tests {
     use crate::errors::ProverSdkErrors;
     use crate::prover_sdk::ProverSDK;
+    use prover::prove::prove_input::ProveInput;
     use std::env;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
-    use prover::prove::prove_input::ProveInput;
     use tracing::debug;
     //Note: Run tests separately because all are async
 
@@ -31,7 +31,7 @@ mod tests {
         // If authentication fails, print out the error message
         assert!(proof.is_ok(), "Failed to prove with invalid url");
         // If authentication fails, print out the error message for debugging purposes
-        if let Err(err) = proof {   
+        if let Err(err) = proof {
             println!(" error: {}", err);
         }
         Ok(())

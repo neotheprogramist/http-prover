@@ -4,10 +4,10 @@ use axum::{routing::get, routing::post, Router};
 pub mod errors;
 pub mod models;
 pub mod prove_input;
+use self::prove_input::ProveInput;
 use crate::auth::jwt::Claims;
 use crate::prove::errors::ProveError;
 use podman::runner::Runner;
-use self::prove_input::ProveInput;
 pub fn auth(app_state: &AppState) -> Router {
     Router::new()
         .route("/auth", get(crate::auth::validation::generate_nonce))
@@ -15,7 +15,10 @@ pub fn auth(app_state: &AppState) -> Router {
         .with_state(app_state.clone())
 }
 
-pub async fn root(_claims: Claims, Json(program_input): Json<ProveInput>) -> Result<String, ProveError> {
+pub async fn root(
+    _claims: Claims,
+    Json(program_input): Json<ProveInput>,
+) -> Result<String, ProveError> {
     let runner = podman::runner::PodmanRunner::new("docker.io/chudas/stone5-poseidon3:latest");
     let v = serde_json::to_string(&program_input)?;
     let result: String = runner.run(&v).await?;
@@ -44,7 +47,7 @@ mod tests {
                 sub: "jwt_token".to_string(),
                 exp: 3600,
             },
-            Json(input_json)
+            Json(input_json),
         )
         .await;
 
