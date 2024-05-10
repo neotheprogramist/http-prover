@@ -1,5 +1,11 @@
-use crate::{prove, Args};
-use axum::{routing::get, Router};
+use crate::{
+    prove::{self, root},
+    Args,
+};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 use prove::errors::ServerError;
 use std::{
     collections::HashMap,
@@ -34,7 +40,7 @@ pub async fn start(args: &Args) -> Result<(), ServerError> {
     // Create a regular axum app.
     let app = Router::new()
         .nest("/", prove::auth(&state))
-        .nest("/prove", prove::router())
+        .route("/prove", post(prove::root)) 
         .route("/slow", get(|| sleep(Duration::from_secs(5))))
         .route("/forever", get(std::future::pending::<()>))
         .layer((

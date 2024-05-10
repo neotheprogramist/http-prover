@@ -1,15 +1,11 @@
 use crate::server::AppState;
 use axum::{routing::get, routing::post, Router};
-mod differ;
 pub mod errors;
-mod merger;
 pub mod models;
-
-pub fn router() -> Router {
-    Router::new()
-        .route("/differ", post(differ::root))
-        .route("/merger", post(merger::root))
-}
+mod prove_input;
+use crate::auth::jwt::Claims;
+use crate::prove::errors::ProveError;
+use podman::runner::Runner;
 
 pub fn auth(app_state: &AppState) -> Router {
     Router::new()
@@ -18,13 +14,21 @@ pub fn auth(app_state: &AppState) -> Router {
         .with_state(app_state.clone())
 }
 
+pub async fn root(_claims: Claims, program_input: String) -> Result<String, ProveError> {
+    let runner = podman::runner::PodmanRunner::new("docker.io/chudas/stone5-poseidon3:latest");
+    let v = program_input.to_string();
+    let result: String = runner.run(&v).await?;
+    let proof: serde_json::Value = serde_json::from_str(&result)?;
+    let final_result = serde_json::to_string_pretty(&proof)?;
+    Ok(final_result)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::auth::jwt::Claims;
     use errors::ProveError;
     use serde_json::Value;
-    use differ::root;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
     #[tokio::test]
