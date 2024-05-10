@@ -1,5 +1,5 @@
 use crate::{
-    prove::{self, root},
+    prove::{self},
     Args,
 };
 use axum::{

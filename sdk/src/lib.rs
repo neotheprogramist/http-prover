@@ -8,36 +8,27 @@ pub mod errors;
 mod tests {
     use crate::errors::ProverSdkErrors;
     use crate::prover_sdk::ProverSDK;
-    use serde_json::Value;
     use std::env;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
-
+    use prover::prove::prove_input::ProveInput;
+    use tracing::debug;
     //Note: Run tests separately because all are async
 
     #[tokio::test]
     async fn test_prover() -> Result<(), ProverSdkErrors> {
+        
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
-
         let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prove";
-
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
             .auth(&private_key_hex)
             .await?
             .build()?;
-
         let data = read_json_file("../prover/resources/input.json").await?;
-
         let proof = sdk.prove(data).await;
-
-        // If authentication fails, print out the error message
-        assert!(proof.is_ok(), "Failed to prove with invalid url");
-        // If authentication fails, print out the error message for debugging purposes
-        if let Err(err) = proof {   
-            println!(" error: {}", err);
-        }
+        dbg!(proof.unwrap());
         Ok(())
     }
 
@@ -141,7 +132,7 @@ mod tests {
             .await?
             .build()?;
 
-        let data = read_json_file("resources/input.json").await?;
+        let data = read_json_file("../prover/resources/input.json").await?;
 
         let proof = sdk.prove(data).await;
         // If authentication fails, print out the error message
@@ -165,14 +156,14 @@ mod tests {
 
         Ok(())
     }
-    async fn read_json_file(file_path: &str) -> Result<Value, ProverSdkErrors> {
+    async fn read_json_file(file_path: &str) -> Result<ProveInput, ProverSdkErrors> {
         println!("{:?}", file_path);
 
         let mut file = File::open(file_path).await?;
         let mut json_string = String::new();
         file.read_to_string(&mut json_string).await?;
 
-        let json_value: Value = serde_json::from_str(&json_string)?;
+        let json_value: ProveInput = serde_json::from_str(&json_string)?;
 
         Ok(json_value)
     }
