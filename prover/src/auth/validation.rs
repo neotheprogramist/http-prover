@@ -33,7 +33,7 @@ pub async fn generate_nonce(
     if params.public_key.trim().is_empty() {
         return Err(ProveError::MissingPublicKey);
     }
-    is_public_key_authorized("authorized_keys.json", &params.public_key).await?;
+    is_public_key_authorized("prover/authorized_keys.json", &params.public_key).await?;
 
     let message_expiration_str = env::var("MESSAGE_EXPIRATION_TIME")
         .expect("MESSAGE_EXPIRATION_TIME environment variable not found!");
@@ -68,7 +68,7 @@ pub async fn validate_signature(
     State(state): State<AppState>,
     Json(payload): Json<ValidateSignatureRequest>,
 ) -> Result<impl IntoResponse, ProveError> {
-    is_public_key_authorized("authorized_keys.json", &payload.public_key).await?;
+    is_public_key_authorized("prover/authorized_keys.json", &payload.public_key).await?;
 
     let message_expiration_str = env::var("SESSION_EXPIRATION_TIME")
         .expect("SESSION_EXPIRATION_TIME environment variable not found!");

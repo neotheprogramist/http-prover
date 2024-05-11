@@ -13,6 +13,7 @@ axum = { version = "0.7.5", features = ["http2", "macros", "multipart", "ws"] }
 cairo-proof-parser ={ git = "https://github.com/cartridge-gg/cairo-proof-parser.git" }
 clap = { version = "4.5.4", features = ["derive"] }
 podman ={ path = "crates/podman" }
+prover ={ path = "prover" }
 thiserror = "1.0.59"
 utils = { path = "crates/utils" }
 tokio = { version = "1.37.0", features = ["full"] }

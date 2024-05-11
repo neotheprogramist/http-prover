@@ -1,5 +1,6 @@
 use crate::errors::ProverSdkErrors;
 use crate::prove_sdk_builder::ProverSDKBuilder;
+use prover::prove::prove_input::ProveInput;
 use reqwest::Client;
 use serde_json::Value;
 
@@ -34,13 +35,13 @@ impl ProverSDK {
     ///
     /// Returns a `Result` containing a string representing the response from the Prover service
     /// if successful, or a `ProverSdkErrors` if an error occurs.
-    pub async fn prove(&self, data: Value) -> Result<String, ProverSdkErrors> {
+    pub async fn prove(&self, data: ProveInput) -> Result<String, ProverSdkErrors> {
         let response = match self.client.post(&self.url_prover).json(&data).send().await {
             Ok(response) => response,
-            Err(reqwest_error) => {
+            Err(request_error) => {
                 return Err(ProverSdkErrors::ProveRequestFailed(format!(
                     "Failed to send HTTP request to URL: {}. Error: {}",
-                    &self.url_prover, reqwest_error
+                    &self.url_prover, request_error
                 )));
             }
         };
