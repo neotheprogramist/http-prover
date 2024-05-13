@@ -3,7 +3,7 @@ use crate::{
     Args,
 };
 use axum::{
-    routing::{get, post},
+    routing::get,
     Router,
 };
 use prove::errors::ServerError;
@@ -40,12 +40,12 @@ pub async fn start(args: &Args) -> Result<(), ServerError> {
     // Create a regular axum app.
     let app = Router::new()
         .nest("/", prove::auth(&state))
-        .route("/prove", post(prove::root))
+        .nest("/prove", prove::router())
         .route("/slow", get(|| sleep(Duration::from_secs(5))))
         .route("/forever", get(std::future::pending::<()>))
         .layer((
             TraceLayer::new_for_http(),
-            TimeoutLayer::new(Duration::from_secs(60)),
+            TimeoutLayer::new(Duration::from_secs(300)),
         ));
 
     let address: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;

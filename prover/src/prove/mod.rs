@@ -1,36 +1,30 @@
 use crate::server::AppState;
-use axum::Json;
 use axum::{routing::get, routing::post, Router};
+mod cairo0_prove;
+mod cairo1_prove;
 pub mod errors;
 pub mod models;
 pub mod prove_input;
-use self::prove_input::ProveInput;
-use crate::auth::jwt::Claims;
-use crate::prove::errors::ProveError;
-use podman::runner::Runner;
+
 pub fn auth(app_state: &AppState) -> Router {
     Router::new()
         .route("/auth", get(crate::auth::validation::generate_nonce))
         .route("/auth", post(crate::auth::validation::validate_signature))
         .with_state(app_state.clone())
 }
-
-pub async fn root(
-    _claims: Claims,
-    Json(program_input): Json<ProveInput>,
-) -> Result<String, ProveError> {
-    let runner = podman::runner::PodmanRunner::new("docker.io/chudas/stone5-poseidon3:latest");
-    let v = serde_json::to_string(&program_input)?;
-    let result: String = runner.run(&v).await?;
-    let proof: serde_json::Value = serde_json::from_str(&result)?;
-    let final_result = serde_json::to_string_pretty(&proof)?;
-    Ok(final_result)
+pub fn router() -> Router {
+    Router::new()
+        .route("/cairo0-prove", post(cairo0_prove::root))
+        .route("/cairo1-prove", post(cairo1_prove::root))
 }
 
 #[cfg(test)]
 mod tests {
+    use self::prove_input::ProveInput;
     use super::*;
     use crate::auth::jwt::Claims;
+    use axum::Json;
+    use cairo0_prove::root;
     use errors::ProveError;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;

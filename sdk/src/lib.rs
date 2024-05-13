@@ -19,8 +19,8 @@ mod tests {
     async fn test_prover() -> Result<(), ProverSdkErrors> {
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
         let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
-        let url_prover = "http://localhost:3000/prove";
-
+        let url_prover = "http://localhost:3000/prove/cairo0-prove";
+        
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
             .auth(&private_key_hex)
@@ -42,7 +42,7 @@ mod tests {
         // Arrange: Set up any necessary data or dependencies
         let private_key_hex: String = "invalid_key".to_string();
         let url_auth = "http://localhost:3000/auth";
-        let url_prover = "http://localhost:3000/prove";
+        let url_prover = "http://localhost:3000/prove/cairo0-prove";
 
         // Act: Attempt to authenticate with the invalid private key
         let result = ProverSDK::new(url_auth, url_prover)
@@ -64,7 +64,7 @@ mod tests {
     async fn test_prover_without_auth() {
         // Arrange: Set up any necessary data or dependencies
         let url_auth = "http://localhost:3000/auth";
-        let url_prover = "http://localhost:3000/prove";
+        let url_prover = "http://localhost:3000/prove/cairo0-prove";
 
         // Act: Attempt to authenticate with the invalid private key
         let result = ProverSDK::new(url_auth, url_prover).build();
@@ -86,7 +86,7 @@ mod tests {
         // Arrange: Set up any necessary data or dependencies
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
         let url_auth = "http://localhost:3000/auth";
-        let url_prover = "http://localhost:3000/prove/state-diff-commitment";
+        let url_prover = "http://localhost:3000/prove/cairo0-prove";
 
         // Act: Attempt to authenticate with the valid private key
         let result = ProverSDK::new(url_auth, url_prover)
@@ -106,7 +106,7 @@ mod tests {
         // Arrange: Set up any necessary data or dependencies
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
         let url_auth = "invalid_url_auth"; // Provide an invalid URL for authentication
-        let url_prover = "http://localhost:3000/prove/state-diff-commitment";
+        let url_prover = "http://localhost:3000/prove/cairo0-prove";
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let result = ProverSDK::new(url_auth, url_prover)
