@@ -1,6 +1,7 @@
 use crate::errors::ProverSdkErrors;
 use crate::prove_sdk_builder::ProverSDKBuilder;
-use prover::prove::prove_input::ProveInput;
+use prover::prove::cairo_0_prover_input::Cairo0ProverInput;
+use prover::prove::cairo_1_prover_input::Cairo1ProverInput;
 use reqwest::Client;
 use serde_json::Value;
 
@@ -35,7 +36,35 @@ impl ProverSDK {
     ///
     /// Returns a `Result` containing a string representing the response from the Prover service
     /// if successful, or a `ProverSdkErrors` if an error occurs.
-    pub async fn prove(&self, data: ProveInput) -> Result<String, ProverSdkErrors> {
+    pub async fn prove_cairo0(&self, data: Cairo0ProverInput) -> Result<String, ProverSdkErrors> {
+        let response = match self.client.post(&self.url_prover).json(&data).send().await {
+            Ok(response) => response,
+            Err(request_error) => {
+                return Err(ProverSdkErrors::ProveRequestFailed(format!(
+                    "Failed to send HTTP request to URL: {}. Error: {}",
+                    &self.url_prover, request_error
+                )));
+            }
+        };
+        if !response.status().is_success() {
+            return Err(ProverSdkErrors::ProveResponseError(format!(
+                "Received unsuccessful status code ({}) from URL: {}",
+                response.status(),
+                &self.url_prover
+            )));
+        }
+        let response_data = match response.text().await {
+            Ok(response_text) => response_text,
+            Err(text_error) => {
+                return Err(ProverSdkErrors::ProveResponseError(format!(
+                    "Failed to read response text from URL: {}. Error: {}",
+                    &self.url_prover, text_error
+                )));
+            }
+        };
+        Ok(response_data)
+    }
+    pub async fn prove_cairo1(&self, data: Cairo1ProverInput) -> Result<String, ProverSdkErrors> {
         let response = match self.client.post(&self.url_prover).json(&data).send().await {
             Ok(response) => response,
             Err(request_error) => {

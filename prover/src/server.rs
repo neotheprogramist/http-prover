@@ -2,10 +2,7 @@ use crate::{
     prove::{self},
     Args,
 };
-use axum::{
-    routing::get,
-    Router,
-};
+use axum::{routing::get, Router};
 use prove::errors::ServerError;
 use std::{
     collections::HashMap,

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProveInput {
+pub struct Cairo0ProverInput {
     pub program: CompiledProgram,
     pub program_input: serde_json::Value,
 }
@@ -19,8 +19,7 @@ pub struct CompiledProgram {
 }
 #[cfg(test)]
 mod tests {
-    use crate::prove::prove_input::CompiledProgram;
-    use crate::prove::prove_input::ProveInput;
+    use crate::prove::cairo_0_prover_input::{Cairo0ProverInput, CompiledProgram};
 
     #[test]
     fn test_deserialize_compiled_program() -> serde_json::Result<()> {
@@ -270,12 +269,12 @@ mod tests {
         let input = r#"{
         "fibonacci_claim_index": 10
     }"#;
-        let prove_input = ProveInput {
+        let prove_input = Cairo0ProverInput {
             program: compiled_program,
             program_input: serde_json::to_value(&input).unwrap(),
         };
         let serialized = &serde_json::to_string(&prove_input).unwrap();
-        let deserialized: ProveInput = serde_json::from_str(&serialized).unwrap();
+        let deserialized: Cairo0ProverInput = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized, prove_input);
         Ok(())
     }

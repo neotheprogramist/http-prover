@@ -1,10 +1,11 @@
 use crate::server::AppState;
 use axum::{routing::get, routing::post, Router};
-mod cairo0_prove;
-mod cairo1_prove;
+mod cairo0;
+mod cairo1;
+pub mod cairo_0_prover_input;
+pub mod cairo_1_prover_input;
 pub mod errors;
 pub mod models;
-pub mod prove_input;
 
 pub fn auth(app_state: &AppState) -> Router {
     Router::new()
@@ -14,17 +15,17 @@ pub fn auth(app_state: &AppState) -> Router {
 }
 pub fn router() -> Router {
     Router::new()
-        .route("/cairo0-prove", post(cairo0_prove::root))
-        .route("/cairo1-prove", post(cairo1_prove::root))
+        .route("/cairo0", post(cairo0::root))
+        .route("/cairo1", post(cairo1::root))
 }
 
 #[cfg(test)]
 mod tests {
-    use self::prove_input::ProveInput;
+    use self::cairo_0_prover_input::Cairo0ProverInput;
     use super::*;
     use crate::auth::jwt::Claims;
     use axum::Json;
-    use cairo0_prove::root;
+    use cairo0::root;
     use errors::ProveError;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
@@ -50,14 +51,14 @@ mod tests {
         // Add assertions based on the expected behavior of root function
     }
 
-    async fn read_json_file(file_path: &str) -> Result<ProveInput, ProveError> {
+    async fn read_json_file(file_path: &str) -> Result<Cairo0ProverInput, ProveError> {
         println!("{:?}", file_path);
 
         let mut file = File::open(file_path).await?;
         let mut json_string = String::new();
         file.read_to_string(&mut json_string).await?;
 
-        let json_value: ProveInput = serde_json::from_str(&json_string)?;
+        let json_value: Cairo0ProverInput = serde_json::from_str(&json_string)?;
 
         Ok(json_value)
     }
