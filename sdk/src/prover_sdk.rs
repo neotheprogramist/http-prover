@@ -3,7 +3,6 @@ use crate::prove_sdk_builder::ProverSDKBuilder;
 use prover::prove::cairo_0_prover_input::Cairo0ProverInput;
 use prover::prove::cairo_1_prover_input::Cairo1ProverInput;
 use reqwest::Client;
-use serde_json::Value;
 
 /// ProverSDK is a struct representing a client for interacting with the Prover service.
 pub struct ProverSDK {

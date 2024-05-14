@@ -3,24 +3,19 @@ pub mod validation;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     use crate::auth::validation::generate_nonce;
     use crate::auth::validation::is_public_key_authorized;
-    use crate::auth::validation::validate_signature;
+
     use crate::prove::errors::ProveError;
     use crate::prove::models::GenerateNonceRequest;
-    use crate::prove::models::ValidateSignatureRequest;
+
     use crate::server::AppState;
-    use axum::body::Body;
-    use axum::extract::Extension;
+
     use axum::extract::Query;
     use axum::extract::State;
-    use axum::http::{Response, StatusCode};
-    use axum::Json;
-    use ed25519_dalek::ed25519::signature::Keypair;
-    use ed25519_dalek::Signature;
-    use ed25519_dalek::{Signer, SigningKey, Verifier};
-    use rand::rngs::OsRng;
+
+    use ed25519_dalek::SigningKey;
     use std::collections::HashMap;
     use std::env;
     use std::sync::Arc;
@@ -55,7 +50,6 @@ mod tests {
         println!("{:?}", response.nonce);
         Ok(())
     }
-    use axum::response::IntoResponse;
 
     #[tokio::test]
     async fn test_is_public_key_authorized() {

@@ -1,6 +1,6 @@
-mod models;
-mod prove_sdk_builder;
-mod prover_sdk;
+pub mod models;
+pub mod prove_sdk_builder;
+pub mod prover_sdk;
 
 pub mod errors;
 
@@ -13,7 +13,6 @@ mod tests {
     use std::env;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
-    use tracing::debug;
     //Note: Run tests separately because all are async
 
     #[tokio::test]
