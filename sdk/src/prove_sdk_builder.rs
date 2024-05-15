@@ -1,3 +1,4 @@
+use crate::access_key::ProverAccessKey;
 use crate::errors::ProverSdkErrors;
 use crate::models::{bytes_to_hex_string, JWTResponse};
 use crate::prover_sdk::ProverSDK;
@@ -47,14 +48,8 @@ impl ProverSDKBuilder {
     ///
     /// Returns a Result containing the ProverSDKBuilder instance with authentication
     /// information if successful, or a ProverSdkErrors if an error occurs.
-    pub async fn auth(mut self, private_key_hex: &str) -> Result<Self, ProverSdkErrors> {
-        // Convert the hexadecimal private key string into bytes
-        let private_key_bytes = hex::decode(private_key_hex)?;
-        let mut private_key_array = [0u8; 32];
-        private_key_array.copy_from_slice(&private_key_bytes);
-
-        let signing_key = SigningKey::from_bytes(&private_key_array);
-        self.signing_key = Some(signing_key);
+    pub async fn auth(mut self, signing_key: ProverAccessKey) -> Result<Self, ProverSdkErrors> {
+        self.signing_key = Some(signing_key.0);
         let jwt_response = self.get_jwt_token().await?;
         self.jwt_token = Some(jwt_response.jwt_token);
         Ok(self)

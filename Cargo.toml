@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "prover",  "sdk" ,"crates/podman","crates/utils"]
+members = [ "prover",  "sdk" ,"crates/podman","crates/utils", "crates/common"]
 
 [workspace.package]
 version = "0.1.0"
