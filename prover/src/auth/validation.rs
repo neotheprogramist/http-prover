@@ -35,9 +35,7 @@ pub async fn generate_nonce(
         return Err(ProveError::MissingPublicKey);
     }
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    println!("manifest_dir: {:?}", manifest_dir);
     let path = manifest_dir + ("/authorized_keys.json");
-    println!("path: {:?}", path);
     is_public_key_authorized(&path, &params.public_key).await?;
     let message_expiration_time: usize = state.message_expiration_time;
     let nonce: Nonce = Nonce::new(32);
