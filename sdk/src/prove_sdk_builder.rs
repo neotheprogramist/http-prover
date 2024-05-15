@@ -1,7 +1,8 @@
 use crate::access_key::ProverAccessKey;
 use crate::errors::ProverSdkErrors;
-use crate::models::{bytes_to_hex_string, JWTResponse};
 use crate::prover_sdk::ProverSDK;
+
+use common::{bytes_to_hex_string, JWTResponse};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use reqwest::{cookie::Jar, Client, Url};
 use serde_json::{json, Value};

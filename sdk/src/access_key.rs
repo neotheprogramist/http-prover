@@ -1,8 +1,7 @@
+use common::bytes_to_hex_string;
 use ed25519_dalek::SigningKey;
 use hex::FromHexError;
 use serde::{Deserialize, Serialize};
-
-use crate::models::bytes_to_hex_string;
 
 #[derive(Debug, Clone)]
 pub struct ProverAccessKey(pub SigningKey);

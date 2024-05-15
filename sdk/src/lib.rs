@@ -1,6 +1,5 @@
 mod access_key;
 mod load;
-pub mod models;
 pub mod prove_sdk_builder;
 pub mod prover_sdk;
 

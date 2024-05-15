@@ -6,32 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-prover.workspace = true
-axum.workspace = true
-cairo-proof-parser.workspace = true
-clap.workspace = true
-podman.workspace = true
+common.workspace = true
+
 thiserror.workspace = true
-utils.workspace = true
 tokio.workspace = true
-tower-http.workspace = true
 tracing.workspace = true
-tracing-subscriber.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-bytes = "1.4.0"
-tower = "0.4.13"
-hyper-util = "0.1.3"
-http-body-util = "0.1.1"
-http = "1.1.0"
-reqwest = { version = "0.12.4", features = ["blocking", "json"] }
-serde_with = "=1.6.1"
-rand = "0.8.5"
-prefix-hex = "0.7.1"
-ed25519-dalek ={version = "2.1.1", features = ["rand_core"]} 
-stark-curve = "0.1.1"
-hex = "0.4.3"
-chrono = "0.4.38"
-reqwest_cookie_store = "0.7.0"
-cookie_store = "0.21.0"
-url = "2.5.0"
+serde_with.workspace = true
+hex.workspace = true
+bytes.workspace = true
+hyper-util.workspace = true
+http.workspace = true
+reqwest.workspace = true
+rand.workspace = true
+ed25519-dalek.workspace = true
+reqwest_cookie_store.workspace = true
+url.workspace = true

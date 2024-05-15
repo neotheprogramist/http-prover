@@ -1,6 +1,7 @@
 use crate::errors::ProverSdkErrors;
 use crate::prove_sdk_builder::ProverSDKBuilder;
-use prover::ProverInput;
+
+use common::ProverInput;
 use reqwest::Client;
 use url::Url;
 

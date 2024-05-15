@@ -1,6 +1,4 @@
-use prover::prove::{
-    cairo_0_prover_input::Cairo0ProverInput, cairo_1_prover_input::Cairo1ProverInput,
-};
+use common::{Cairo0ProverInput, Cairo1ProverInput};
 use tokio::{fs::File, io::AsyncReadExt};
 
 use crate::errors::ProverSdkErrors;

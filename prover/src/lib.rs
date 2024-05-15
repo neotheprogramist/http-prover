@@ -2,6 +2,7 @@ pub mod auth;
 pub mod prove;
 pub mod server;
 use clap::Parser;
+
 /// Command line arguments for the server
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -14,6 +15,4 @@ pub struct Args {
     #[clap(long, default_value = "3000")]
     port: u16,
 }
-pub trait ProverInput {
-    fn serialize(self) -> serde_json::Value;
-}
+
