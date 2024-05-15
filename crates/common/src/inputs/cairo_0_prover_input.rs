@@ -1,16 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 use crate::ProverInput;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Cairo0ProverInput {
     pub program: CompiledProgram,
     pub program_input: serde_json::Value,
 }
+
 impl ProverInput for Cairo0ProverInput {
     fn serialize(self) -> serde_json::Value {
         serde_json::to_value(self).unwrap()
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CompiledProgram {
     pub attributes: Vec<String>,
@@ -24,9 +27,10 @@ pub struct CompiledProgram {
     pub prime: String,
     pub reference_manager: serde_json::Value,
 }
+
 #[cfg(test)]
 mod tests {
-    use crate::prove::cairo_0_prover_input::{Cairo0ProverInput, CompiledProgram};
+    use crate::cairo_0_prover_input::{Cairo0ProverInput, CompiledProgram};
 
     #[test]
     fn test_deserialize_compiled_program() -> serde_json::Result<()> {

@@ -1,7 +1,7 @@
-use super::cairo_1_prover_input::Cairo1ProverInput;
 use crate::auth::jwt::Claims;
 use crate::prove::errors::ProveError;
 use axum::Json;
+use common::Cairo1ProverInput;
 use podman::runner::Runner;
 
 pub async fn root(

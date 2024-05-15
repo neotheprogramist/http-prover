@@ -1,6 +1,8 @@
+use crate::access_key::ProverAccessKey;
 use crate::errors::ProverSdkErrors;
-use crate::models::{bytes_to_hex_string, JWTResponse};
 use crate::prover_sdk::ProverSDK;
+
+use common::{bytes_to_hex_string, JWTResponse};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use reqwest::{cookie::Jar, Client, Url};
 use serde_json::{json, Value};
@@ -10,8 +12,8 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct ProverSDKBuilder {
     client: Client,
-    url_auth: String,
-    url_prover: String,
+    auth: Url,
+    prover: Url,
     signing_key: Option<SigningKey>,
     jwt_token: Option<String>,
 }
@@ -27,11 +29,11 @@ impl ProverSDKBuilder {
     /// # Returns
     ///
     /// Returns a new instance of ProverSDKBuilder.
-    pub fn new(url_auth: &str, url_prover: &str) -> Self {
+    pub fn new(auth: Url, prover: Url) -> Self {
         ProverSDKBuilder {
             client: Client::new(),
-            url_auth: url_auth.to_string(),
-            url_prover: url_prover.to_string(),
+            auth,
+            prover,
             signing_key: None,
             jwt_token: None,
         }
@@ -47,14 +49,8 @@ impl ProverSDKBuilder {
     ///
     /// Returns a Result containing the ProverSDKBuilder instance with authentication
     /// information if successful, or a ProverSdkErrors if an error occurs.
-    pub async fn auth(mut self, private_key_hex: &str) -> Result<Self, ProverSdkErrors> {
-        // Convert the hexadecimal private key string into bytes
-        let private_key_bytes = hex::decode(private_key_hex)?;
-        let mut private_key_array = [0u8; 32];
-        private_key_array.copy_from_slice(&private_key_bytes);
-
-        let signing_key = SigningKey::from_bytes(&private_key_array);
-        self.signing_key = Some(signing_key);
+    pub async fn auth(mut self, signing_key: ProverAccessKey) -> Result<Self, ProverSdkErrors> {
+        self.signing_key = Some(signing_key.0);
         let jwt_response = self.get_jwt_token().await?;
         self.jwt_token = Some(jwt_response.jwt_token);
         Ok(self)
@@ -92,7 +88,7 @@ impl ProverSDKBuilder {
     async fn get_nonce(&self, public_key: &VerifyingKey) -> Result<String, ProverSdkErrors> {
         let url_with_params = format!(
             "{}?public_key={}",
-            &self.url_auth,
+            self.auth,
             bytes_to_hex_string(public_key.as_bytes())
         );
 
@@ -161,7 +157,7 @@ impl ProverSDKBuilder {
 
         let response = match self
             .client
-            .post(&self.url_auth)
+            .post(self.auth.clone())
             .header(reqwest::header::CONTENT_TYPE, "application/json")
             .json(&data)
             .send()
@@ -171,7 +167,7 @@ impl ProverSDKBuilder {
             Err(reqwest_error) => {
                 return Err(ProverSdkErrors::ValidateSignatureRequestFailed(format!(
                     "Failed to send HTTP request to URL: {}. Error: {}",
-                    &self.url_auth, reqwest_error
+                    self.auth, reqwest_error
                 )));
             }
         };
@@ -180,7 +176,7 @@ impl ProverSDKBuilder {
             return Err(ProverSdkErrors::ValidateSignatureResponseError(format!(
                 "Received unsuccessful status code ({}) from URL: {}",
                 response.status(),
-                &self.url_auth
+                self.auth
             )));
         }
 
@@ -189,7 +185,7 @@ impl ProverSDKBuilder {
             Err(json_error) => {
                 return Err(ProverSdkErrors::JsonParsingFailed(format!(
                     "Failed to parse JSON response from URL: {}. Error: {}",
-                    &self.url_auth, json_error
+                    self.auth, json_error
                 )));
             }
         };
@@ -220,12 +216,10 @@ impl ProverSDKBuilder {
             .ok_or(ProverSdkErrors::SigningKeyNotFound)?;
         let jwt_token = self.jwt_token.ok_or(ProverSdkErrors::JwtTokenNotFound)?;
 
-        let url_prover = Url::parse(&self.url_prover)?;
-
         let jar = Jar::default();
         jar.add_cookie_str(
             &format!("jwt_token={}; HttpOnly; Secure; Path=/", jwt_token),
-            &url_prover,
+            &self.prover,
         );
 
         let client = reqwest::Client::builder()
@@ -237,7 +231,7 @@ impl ProverSDKBuilder {
 
         Ok(ProverSDK {
             client,
-            url_prover: self.url_prover,
+            prover: self.prover,
         })
     }
 }

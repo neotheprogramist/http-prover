@@ -2,8 +2,6 @@ use crate::server::AppState;
 use axum::{routing::get, routing::post, Router};
 mod cairo0;
 mod cairo1;
-pub mod cairo_0_prover_input;
-pub mod cairo_1_prover_input;
 pub mod errors;
 pub mod models;
 
@@ -22,14 +20,15 @@ pub fn router(app_state: &AppState) -> Router {
 
 #[cfg(test)]
 mod tests {
-    use self::cairo_0_prover_input::Cairo0ProverInput;
     use super::*;
     use crate::auth::jwt::Claims;
     use axum::Json;
     use cairo0::root;
+    use common::Cairo0ProverInput;
     use errors::ProveError;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
+
     #[tokio::test]
     async fn test_root_with_input_json() {
         // Read input data from resources/input.json
