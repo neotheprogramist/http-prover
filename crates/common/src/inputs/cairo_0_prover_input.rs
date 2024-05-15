@@ -30,7 +30,7 @@ pub struct CompiledProgram {
 
 #[cfg(test)]
 mod tests {
-    use crate::cairo_0_prover_input::{Cairo0ProverInput, CompiledProgram};
+    use crate::inputs::cairo_0_prover_input::{Cairo0ProverInput, CompiledProgram};
 
     #[test]
     fn test_deserialize_compiled_program() -> serde_json::Result<()> {
