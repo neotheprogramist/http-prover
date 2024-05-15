@@ -2,11 +2,12 @@ use crate::errors::ProverSdkErrors;
 use crate::prove_sdk_builder::ProverSDKBuilder;
 use prover::ProverInput;
 use reqwest::Client;
+use url::Url;
 
 /// ProverSDK is a struct representing a client for interacting with the Prover service.
 pub struct ProverSDK {
     pub client: Client,
-    pub url_prover: String,
+    pub prover: Url,
 }
 
 impl ProverSDK {
@@ -20,8 +21,8 @@ impl ProverSDK {
     /// # Returns
     ///
     /// Returns a `ProverSDKBuilder` which can be used to further configure the ProverSDK.
-    pub fn new(url_auth: &str, url_prover: &str) -> ProverSDKBuilder {
-        ProverSDKBuilder::new(url_auth, url_prover)
+    pub fn new(auth: Url, prover: Url) -> ProverSDKBuilder {
+        ProverSDKBuilder::new(auth, prover)
     }
 
     /// Sends the provided data to the Prover service and returns the prover output.
@@ -40,7 +41,7 @@ impl ProverSDK {
     {
         let response = match self
             .client
-            .post(&self.url_prover)
+            .post(self.prover.clone())
             .json(&data.serialize())
             .send()
             .await
@@ -49,7 +50,7 @@ impl ProverSDK {
             Err(request_error) => {
                 return Err(ProverSdkErrors::ProveRequestFailed(format!(
                     "Failed to send HTTP request to URL: {}. Error: {}",
-                    &self.url_prover, request_error
+                    self.prover, request_error
                 )));
             }
         };
@@ -58,7 +59,7 @@ impl ProverSDK {
             return Err(ProverSdkErrors::ProveResponseError(format!(
                 "Received unsuccessful status code ({}) from URL: {}",
                 response.status(),
-                &self.url_prover
+                self.prover
             )));
         }
 
@@ -67,7 +68,7 @@ impl ProverSDK {
             Err(text_error) => {
                 return Err(ProverSdkErrors::ProveResponseError(format!(
                     "Failed to read response text from URL: {}. Error: {}",
-                    &self.url_prover, text_error
+                    self.prover, text_error
                 )));
             }
         };

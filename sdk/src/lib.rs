@@ -13,13 +13,13 @@ mod tests {
     use std::env;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
-    //Note: Run tests separately because all are async
+    use url::Url;
 
     #[tokio::test]
     async fn test_prover_cairo0() -> Result<(), ProverSdkErrors> {
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
-        let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
-        let url_prover = "http://localhost:3000/prove/cairo0";
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap(); // Provide an invalid URL for authentication
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
@@ -39,8 +39,8 @@ mod tests {
     #[tokio::test]
     async fn test_prover_cairo1() -> Result<(), ProverSdkErrors> {
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
-        let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
-        let url_prover = "http://localhost:3000/prove/cairo1";
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap(); // Provide an invalid URL for authentication
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
@@ -62,8 +62,8 @@ mod tests {
     async fn test_invalid_private_key_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
         let private_key_hex: String = "invalid_key".to_string();
-        let url_auth = "http://localhost:3000/auth";
-        let url_prover = "http://localhost:3000/prove/cairo0";
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the invalid private key
         let result = ProverSDK::new(url_auth, url_prover)
@@ -82,10 +82,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_prover_without_auth() {
+    async fn test_prover_without_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let url_auth = "http://localhost:3000/auth";
-        let url_prover = "http://localhost:3000/prove/cairo0";
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the invalid private key
         let result = ProverSDK::new(url_auth, url_prover).build();
@@ -100,14 +100,16 @@ mod tests {
         if let Err(err) = result {
             println!("Authentication error: {}", err);
         }
+
+        Ok(())
     }
 
     #[tokio::test]
     async fn test_valid_private_key_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
-        let url_auth = "http://localhost:3000/auth";
-        let url_prover = "http://localhost:3000/prove/cairo0-prove";
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the valid private key
         let result = ProverSDK::new(url_auth, url_prover)
@@ -126,8 +128,8 @@ mod tests {
     async fn test_invalid_url_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
-        let url_auth = "invalid_url_auth"; // Provide an invalid URL for authentication
-        let url_prover = "http://localhost:3000/prove/cairo0";
+        let url_auth = Url::parse("http://localhost:3000/notauth").unwrap(); // Provide an invalid URL for authentication
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let result = ProverSDK::new(url_auth, url_prover)
@@ -149,8 +151,8 @@ mod tests {
     async fn test_invalid_url_prover() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
-        let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
-        let url_prover = "http://localhost:3000/prover_invalid";
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
@@ -166,11 +168,12 @@ mod tests {
 
         Ok(())
     }
+
     #[tokio::test]
     async fn test_invalid_url_without_base_prover() -> Result<(), ProverSdkErrors> {
         let private_key_hex: String = env::var("PRIVATE_KEY")?;
-        let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
-        let url_prover = "invalid_url_prover";
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
+        let url_prover = Url::parse("http://localhost:3000/notprove/cairo0").unwrap(); // Provide an invalid URL for authentication
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(url_auth, url_prover)
