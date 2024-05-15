@@ -27,7 +27,7 @@ mod tests {
             .await?
             .build()?;
         let data = read_json_file_cairo0("../prover/resources/input_cairo0.json").await?;
-        let proof = sdk.prove_cairo0(data).await;
+        let proof = sdk.prove(data).await;
         // If authentication fails, print out the error message
         assert!(proof.is_ok(), "Failed to prove with invalid url");
         // If authentication fails, print out the error message for debugging purposes
@@ -48,7 +48,7 @@ mod tests {
             .await?
             .build()?;
         let data = read_json_file_cairo1("../prover/resources/input_cairo1.json").await?;
-        let proof = sdk.prove_cairo1(data).await;
+        let proof = sdk.prove(data).await;
         // If authentication fails, print out the error message
         assert!(proof.is_ok(), "Failed to prove with invalid url");
         // If authentication fails, print out the error message for debugging purposes
@@ -160,7 +160,7 @@ mod tests {
 
         let data = read_json_file_cairo0("../prover/resources/input.json").await?;
 
-        let proof = sdk.prove_cairo0(data).await;
+        let proof = sdk.prove(data).await;
         // If authentication fails, print out the error message
         assert!(proof.is_err(), "Failed to prove with invalid url");
 

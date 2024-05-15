@@ -14,3 +14,6 @@ pub struct Args {
     #[clap(long, default_value = "3000")]
     port: u16,
 }
+pub trait ProverInput {
+    fn serialize(self) -> serde_json::Value;
+}
