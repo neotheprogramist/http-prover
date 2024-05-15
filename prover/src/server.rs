@@ -17,6 +17,10 @@ use utils::shutdown::shutdown_signal;
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub prover_image_name: String,
+    pub message_expiration_time: usize,
+    pub session_expiration_time: usize,
+    pub private_key: String,
+    pub jwt_secret_key: String,
     pub nonces: Arc<Mutex<HashMap<String, String>>>,
 }
 
@@ -24,6 +28,10 @@ pub async fn start(args: &Args) -> Result<(), ServerError> {
     let state: AppState = AppState {
         prover_image_name: "Sample".to_string(),
         nonces: Arc::new(Mutex::new(HashMap::new())),
+        message_expiration_time: args.message_expiration_time as usize,
+        session_expiration_time: args.session_expiration_time as usize,
+        jwt_secret_key: args.jwt_secret_key.clone(),
+        private_key: args.private_key.clone(),
     };
     // Enable tracing.
     tracing_subscriber::registry()
@@ -37,7 +45,7 @@ pub async fn start(args: &Args) -> Result<(), ServerError> {
     // Create a regular axum app.
     let app = Router::new()
         .nest("/", prove::auth(&state))
-        .nest("/prove", prove::router())
+        .nest("/prove", prove::router(&state))
         .route("/slow", get(|| sleep(Duration::from_secs(5))))
         .route("/forever", get(std::future::pending::<()>))
         .layer((

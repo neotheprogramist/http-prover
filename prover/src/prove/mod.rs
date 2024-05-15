@@ -13,10 +13,11 @@ pub fn auth(app_state: &AppState) -> Router {
         .route("/auth", post(crate::auth::validation::validate_signature))
         .with_state(app_state.clone())
 }
-pub fn router() -> Router {
+pub fn router(app_state: &AppState) -> Router {
     Router::new()
         .route("/cairo0", post(cairo0::root))
         .route("/cairo1", post(cairo1::root))
+        .with_state(app_state.clone())
 }
 
 #[cfg(test)]
@@ -32,7 +33,7 @@ mod tests {
     #[tokio::test]
     async fn test_root_with_input_json() {
         // Read input data from resources/input.json
-        let input_json = read_json_file("resources/input.json")
+        let input_json = read_json_file("resources/input_cairo0.json")
             .await
             .expect("Failed to read input JSON");
 

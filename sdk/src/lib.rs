@@ -10,14 +10,14 @@ mod tests {
     use crate::prover_sdk::ProverSDK;
     use prover::prove::cairo_0_prover_input::Cairo0ProverInput;
     use prover::prove::cairo_1_prover_input::Cairo1ProverInput;
-    use std::env;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
     //Note: Run tests separately because all are async
 
     #[tokio::test]
     async fn test_prover_cairo0() -> Result<(), ProverSdkErrors> {
-        let private_key_hex: String = env::var("PRIVATE_KEY")?;
+        let private_key_hex: String =
+            "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740".to_string();
         let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prove/cairo0";
 
@@ -26,6 +26,7 @@ mod tests {
             .auth(&private_key_hex)
             .await?
             .build()?;
+        dbg!("sdk");
         let data = read_json_file_cairo0("../prover/resources/input_cairo0.json").await?;
         let proof = sdk.prove(data).await;
         // If authentication fails, print out the error message
@@ -38,7 +39,8 @@ mod tests {
     }
     #[tokio::test]
     async fn test_prover_cairo1() -> Result<(), ProverSdkErrors> {
-        let private_key_hex: String = env::var("PRIVATE_KEY")?;
+        let private_key_hex: String =
+            "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740".to_string();
         let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prove/cairo1";
 
@@ -61,7 +63,8 @@ mod tests {
     #[tokio::test]
     async fn test_invalid_private_key_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let private_key_hex: String = "invalid_key".to_string();
+        let private_key_hex: String =
+            "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740".to_string();
         let url_auth = "http://localhost:3000/auth";
         let url_prover = "http://localhost:3000/prove/cairo0";
 
@@ -105,7 +108,8 @@ mod tests {
     #[tokio::test]
     async fn test_valid_private_key_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let private_key_hex: String = env::var("PRIVATE_KEY")?;
+        let private_key_hex: String =
+            "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740".to_string();
         let url_auth = "http://localhost:3000/auth";
         let url_prover = "http://localhost:3000/prove/cairo0-prove";
 
@@ -125,7 +129,8 @@ mod tests {
     #[tokio::test]
     async fn test_invalid_url_auth() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let private_key_hex: String = env::var("PRIVATE_KEY")?;
+        let private_key_hex: String =
+            "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740".to_string();
         let url_auth = "invalid_url_auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prove/cairo0";
 
@@ -148,7 +153,8 @@ mod tests {
     #[tokio::test]
     async fn test_invalid_url_prover() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
-        let private_key_hex: String = env::var("PRIVATE_KEY")?;
+        let private_key_hex: String =
+            "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740".to_string();
         let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "http://localhost:3000/prover_invalid";
 
@@ -168,7 +174,8 @@ mod tests {
     }
     #[tokio::test]
     async fn test_invalid_url_without_base_prover() -> Result<(), ProverSdkErrors> {
-        let private_key_hex: String = env::var("PRIVATE_KEY")?;
+        let private_key_hex: String =
+            "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740".to_string();
         let url_auth = "http://localhost:3000/auth"; // Provide an invalid URL for authentication
         let url_prover = "invalid_url_prover";
 

@@ -14,11 +14,11 @@ pub struct Args {
     #[arg(long, default_value = "3000")]
     port: u16,
     #[arg(long, env)]
-    env_var_jwt_secret_key: String,
+    jwt_secret_key: String,
     #[arg(long, env)]
-    message_expiration_time: u16,
+    message_expiration_time: u32,
     #[arg(long, env)]
-    session_expiration_time: u16,
+    session_expiration_time: u32,
     #[arg(long, env)]
     private_key: String,
 }
