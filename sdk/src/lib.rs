@@ -32,7 +32,8 @@ mod tests {
         let sdk = ProverSDK::new(url_auth, url_prover)
             .auth(get_signing_key())
             .await?
-            .build()?;
+            .build()?
+
         let data = load_cairo0("../prover/resources/input_cairo0.json").await?;
         let proof = sdk.prove(data).await;
         // If authentication fails, print out the error message
@@ -117,6 +118,7 @@ mod tests {
         let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
         let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
+
         // Act: Attempt to authenticate with the valid private key
         let result = ProverSDK::new(url_auth, url_prover)
             .auth(get_signing_key())
@@ -155,6 +157,7 @@ mod tests {
     #[tokio::test]
     async fn test_invalid_url_prover() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
+
         let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
         let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
@@ -175,6 +178,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_invalid_url_without_base_prover() -> Result<(), ProverSdkErrors> {
+
         let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
         let url_prover = Url::parse("http://localhost:3000/notprove/cairo0").unwrap(); // Provide an invalid URL for authentication
 

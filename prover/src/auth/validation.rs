@@ -1,4 +1,5 @@
 use crate::auth::jwt::encode_jwt;
+use crate::auth::jwt::Keys;
 use crate::prove::errors::ProveError;
 use crate::prove::models::{
     GenerateNonceRequest, GenerateNonceResponse, JWTResponse, Nonce, ValidateSignatureRequest,
@@ -11,7 +12,7 @@ use axum::{
 };
 use ed25519_dalek::Signature;
 use ed25519_dalek::VerifyingKey;
-use std::{collections::HashSet, env};
+use std::collections::HashSet;
 use tokio::{fs::File, io::AsyncReadExt};
 pub const COOKIE_NAME: &str = "jwt_token";
 
@@ -33,15 +34,14 @@ pub async fn generate_nonce(
     if params.public_key.trim().is_empty() {
         return Err(ProveError::MissingPublicKey);
     }
-    is_public_key_authorized("prover/authorized_keys.json", &params.public_key).await?;
-
-    let message_expiration_str = env::var("MESSAGE_EXPIRATION_TIME")
-        .expect("MESSAGE_EXPIRATION_TIME environment variable not found!");
-    let message_expiration_time: usize = message_expiration_str.parse::<usize>().unwrap();
-
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    println!("manifest_dir: {:?}", manifest_dir);
+    let path = manifest_dir + ("/authorized_keys.json");
+    println!("path: {:?}", path);
+    is_public_key_authorized(&path, &params.public_key).await?;
+    let message_expiration_time: usize = state.message_expiration_time;
     let nonce: Nonce = Nonce::new(32);
     let nonce_string = nonce.to_string();
-
     let mut nonces: std::sync::MutexGuard<'_, std::collections::HashMap<String, String>> =
         state.nonces.lock().unwrap();
     let formatted_key = params.public_key.trim().to_lowercase();
@@ -70,10 +70,7 @@ pub async fn validate_signature(
 ) -> Result<impl IntoResponse, ProveError> {
     is_public_key_authorized("prover/authorized_keys.json", &payload.public_key).await?;
 
-    let message_expiration_str = env::var("SESSION_EXPIRATION_TIME")
-        .expect("SESSION_EXPIRATION_TIME environment variable not found!");
-
-    let session_expiration_time: usize = message_expiration_str.parse::<usize>().unwrap();
+    let session_expiration_time: usize = state.session_expiration_time;
 
     let nonces = state
         .nonces
@@ -94,8 +91,12 @@ pub async fn validate_signature(
     }
 
     let expiration = chrono::Utc::now() + chrono::Duration::seconds(session_expiration_time as i64);
-    let token = encode_jwt(&payload.public_key, expiration.timestamp() as usize)
-        .map_err(|_| ProveError::InternalServerError("JWT generation failed".to_string()))?;
+    let token = encode_jwt(
+        &payload.public_key,
+        expiration.timestamp() as usize,
+        Keys::new(state.jwt_secret_key.clone().as_bytes()),
+    )
+    .map_err(|_| ProveError::InternalServerError("JWT generation failed".to_string()))?;
     let cookie_value = format!(
         "{}={}; HttpOnly; Secure; Path=/; Max-Age={}",
         COOKIE_NAME, token, session_expiration_time
