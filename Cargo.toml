@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["prover", "sdk", "crates/podman", "crates/utils", "crates/common"]
+members = ["prover", "sdk", "crates/podman", "crates/utils", "crates/common", "bin/utils"]
 
 [workspace.package]
 version = "0.1.0"
@@ -12,13 +12,12 @@ edition = "2021"
 podman = { path = "crates/podman" }
 prover = { path = "prover" }
 common = { path = "crates/common" }
+sdk = { path = "sdk" }
 
 axum = { version = "0.7.5", features = ["http2", "macros", "multipart", "ws"] }
-
 async-session = "3.0.0"
 cairo-proof-parser = { git = "https://github.com/cartridge-gg/cairo-proof-parser.git" }
 clap = { version = "4.5.4", features = ["derive", "env"] }
-
 thiserror = "1.0.59"
 utils = { path = "crates/utils" }
 tokio = { version = "1.37.0", features = ["full"] }

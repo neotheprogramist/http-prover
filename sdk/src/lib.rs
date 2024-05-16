@@ -1,12 +1,13 @@
 mod access_key;
 mod load;
 pub mod prove_sdk_builder;
-pub mod prover_sdk;
+mod prover_sdk;
 
 pub mod errors;
 
 pub use access_key::ProverAccessKey;
 pub use load::{load_cairo0, load_cairo1};
+pub use prover_sdk::ProverSDK;
 
 #[cfg(test)]
 mod tests {
