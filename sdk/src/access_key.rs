@@ -19,6 +19,15 @@ impl ProverAccessKey {
         Ok(ProverAccessKey(signer))
     }
 
+    pub fn verifying_key_as_hex_string(&self) -> String {
+        bytes_to_hex_string(&self.0.verifying_key().to_bytes())
+    }
+
+    pub fn signing_key_as_hex_string(&self) -> String {
+        bytes_to_hex_string(&self.0.to_bytes())
+    }
+
+    /// Notice that this key has to be register by the prover operator first.
     pub fn random() -> Self {
         let mut rng = rand::thread_rng();
         let private_key = SigningKey::generate(&mut rng);

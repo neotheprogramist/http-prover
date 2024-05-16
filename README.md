@@ -15,12 +15,20 @@ Run the following command in your terminal:
 Note:
 Tests from the sdk lib.rs file should be run separately.
 
+## Using sdk
+
+Run command below to generate keys. Pass the public key to operator, after he includes it to the prover you will be able to use sdk.
+
+```bash
+cargo run --bin prover-keygen
+```
 
 ## Usage
 
 To use the SDK, follow these steps:
 
 Authenticate with the Prover service using your private key and the authentication URL:
+
 ```
     #[tokio::main]
     async fn main() -> Result<(), ProverSdkErrors> {
@@ -36,6 +44,7 @@ Authenticate with the Prover service using your private key and the authenticati
         Ok(())
     }
 ```
+
 Use the SDK to prove data:
 
 ```
