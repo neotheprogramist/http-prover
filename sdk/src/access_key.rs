@@ -28,7 +28,7 @@ impl ProverAccessKey {
     }
 
     /// Notice that this key has to be register by the prover operator first.
-    pub fn random() -> Self {
+    pub fn generate() -> Self {
         let mut rng = rand::thread_rng();
         let private_key = SigningKey::generate(&mut rng);
         ProverAccessKey(private_key)

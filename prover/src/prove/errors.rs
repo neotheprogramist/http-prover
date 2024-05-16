@@ -36,7 +36,7 @@ pub enum ProveError {
     Parse(#[from] serde_json::Error),
 
     #[error("unauthorized access")]
-    Unauthorized(String),
+    Unauthorized(ed25519_dalek::ed25519::Error),
 
     #[error("resource not found")]
     NotFound(String),

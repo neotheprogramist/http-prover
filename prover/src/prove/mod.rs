@@ -9,6 +9,10 @@ pub fn auth(app_state: &AppState) -> Router {
     Router::new()
         .route("/auth", get(crate::auth::validation::generate_nonce))
         .route("/auth", post(crate::auth::validation::validate_signature))
+        .route(
+            "/register",
+            post(crate::auth::validation::add_authorized_key),
+        )
         .with_state(app_state.clone())
 }
 pub fn router(app_state: &AppState) -> Router {
@@ -52,8 +56,6 @@ mod tests {
     }
 
     async fn read_json_file(file_path: &str) -> Result<Cairo0ProverInput, ProveError> {
-        println!("{:?}", file_path);
-
         let mut file = File::open(file_path).await?;
         let mut json_string = String::new();
         file.read_to_string(&mut json_string).await?;

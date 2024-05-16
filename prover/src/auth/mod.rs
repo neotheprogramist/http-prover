@@ -7,7 +7,6 @@ mod tests {
 
     use crate::auth::authorizer::Authorizer;
     use crate::auth::validation::generate_nonce;
-    use crate::auth::validation::is_public_key_authorized;
 
     use crate::prove::errors::ProveError;
     use crate::prove::models::GenerateNonceRequest;
@@ -50,9 +49,8 @@ mod tests {
 
         assert!(result.is_ok());
 
-        let response = result.unwrap();
+        let _response = result.unwrap();
 
-        println!("{:?}", response.nonce);
         Ok(())
     }
 }

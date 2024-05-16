@@ -26,26 +26,6 @@ pub struct AppState {
 }
 
 pub async fn start(args: Args) -> Result<(), ServerError> {
-    let authorizer = match args.authorized_keys {
-        Some(path) => {
-            tracing::info!("Using authorized keys file");
-            Authorizer::File(FileAuthorizer::new(path).await?)
-        }
-        None => {
-            tracing::info!("Using open authorization");
-            Authorizer::Open
-        }
-    };
-
-    let state: AppState = AppState {
-        prover_image_name: "Sample".to_string(),
-        nonces: Arc::new(Mutex::new(HashMap::new())),
-        message_expiration_time: args.message_expiration_time as usize,
-        session_expiration_time: args.session_expiration_time as usize,
-        jwt_secret_key: args.jwt_secret_key,
-        private_key: args.private_key,
-        authorizer,
-    };
     // Enable tracing.
     tracing_subscriber::registry()
         .with(
@@ -54,6 +34,27 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+
+    let authorizer = match args.authorized_keys {
+        Some(path) => {
+            tracing::trace!("Using authorized keys file");
+            Authorizer::Persistent(FileAuthorizer::new(path).await?)
+        }
+        None => {
+            tracing::trace!("Using memory authorization");
+            Authorizer::Memory(vec![].into())
+        }
+    };
+
+    let state = AppState {
+        prover_image_name: "Sample".to_string(),
+        nonces: Arc::new(Mutex::new(HashMap::new())),
+        message_expiration_time: args.message_expiration_time as usize,
+        session_expiration_time: args.session_expiration_time as usize,
+        jwt_secret_key: args.jwt_secret_key,
+        private_key: args.private_key,
+        authorizer,
+    };
 
     // Create a regular axum app.
     let app = Router::new()

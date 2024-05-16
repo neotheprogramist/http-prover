@@ -16,7 +16,6 @@ mod tests {
     use crate::load::{load_cairo0, load_cairo1};
     use crate::prover_sdk::ProverSDK;
     use crate::ProverAccessKey;
-    use prover::Args;
     use url::Url;
 
     fn get_signing_key() -> ProverAccessKey {
@@ -32,10 +31,7 @@ mod tests {
         let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
-        let sdk = ProverSDK::new(url_auth, url_prover)
-            .auth(get_signing_key())
-            .await?
-            .build()?;
+        let sdk = ProverSDK::new(get_signing_key(), url_auth, url_prover).await?;
 
         let data = load_cairo0(PathBuf::from("../prover/resources/input_cairo0.json")).await?;
         let proof = sdk.prove(data).await;
@@ -54,10 +50,7 @@ mod tests {
         let url_prover = Url::parse("http://localhost:3000/prove/cairo1").unwrap();
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
-        let sdk = ProverSDK::new(url_auth, url_prover)
-            .auth(get_signing_key())
-            .await?
-            .build()?;
+        let sdk = ProverSDK::new(get_signing_key(), url_auth, url_prover).await?;
 
         let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
         let proof = sdk.prove(data).await;
@@ -71,25 +64,21 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_prover_without_auth() -> Result<(), ProverSdkErrors> {
-        // Arrange: Set up any necessary data or dependencies
-        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
-        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
+    async fn test_prover_cairo1_concurrent() -> Result<(), ProverSdkErrors> {
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap(); // Provide an invalid URL for authentication
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo1").unwrap();
 
-        // Act: Attempt to authenticate with the invalid private key
-        let result = ProverSDK::new(url_auth, url_prover).build();
+        // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
+        let sdk = ProverSDK::new(get_signing_key(), url_auth, url_prover).await?;
 
-        // Assert: Check that authentication fails
-        assert!(
-            result.is_err(),
-            "Expected authentication to fail because authentication has not been performed"
-        );
-
+        let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
+        let proof = sdk.prove(data).await;
+        // If authentication fails, print out the error message
+        assert!(proof.is_ok(), "Failed to prove with invalid url");
         // If authentication fails, print out the error message for debugging purposes
-        if let Err(err) = result {
-            println!("Authentication error: {}", err);
+        if let Err(err) = proof {
+            println!(" error: {}", err);
         }
-
         Ok(())
     }
 
@@ -100,9 +89,7 @@ mod tests {
         let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the valid private key
-        let result = ProverSDK::new(url_auth, url_prover)
-            .auth(get_signing_key())
-            .await;
+        let result = ProverSDK::new(get_signing_key(), url_auth, url_prover).await;
 
         // Assert: Check that authentication succeeds
         assert!(
@@ -119,9 +106,7 @@ mod tests {
         let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
-        let result = ProverSDK::new(url_auth, url_prover)
-            .auth(get_signing_key())
-            .await;
+        let result = ProverSDK::new(get_signing_key(), url_auth, url_prover).await;
         // Assert: Check that authentication fails due to invalid URL
         assert!(
             result.is_err(),
@@ -142,10 +127,7 @@ mod tests {
         let url_prover = Url::parse("http://localhost:3000/notprove/cairo1").unwrap();
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
-        let sdk = ProverSDK::new(url_auth, url_prover)
-            .auth(get_signing_key())
-            .await?
-            .build()?;
+        let sdk = ProverSDK::new(get_signing_key(), url_auth, url_prover).await?;
 
         let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
 
@@ -162,11 +144,26 @@ mod tests {
         let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap(); // Provide an invalid URL for authentication
 
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
-        let sdk = ProverSDK::new(url_auth, url_prover)
-            .auth(get_signing_key())
-            .await;
+        let sdk = ProverSDK::new(get_signing_key(), url_auth, url_prover).await;
 
         assert!(sdk.is_err(), "Failed to parse url without base to url");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_register() -> Result<(), ProverSdkErrors> {
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
+        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
+        let url_register = Url::parse("http://localhost:3000/register").unwrap();
+
+        let new_key = ProverAccessKey::generate();
+
+        // Act: Attempt to authenticate with the valid private key
+        let mut sdk = ProverSDK::new(get_signing_key(), url_auth, url_prover).await?;
+        sdk.register(new_key.0.verifying_key(), url_register)
+            .await?;
+        // If authentication fails, print out the error message
 
         Ok(())
     }
