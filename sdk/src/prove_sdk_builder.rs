@@ -104,10 +104,9 @@ impl ProverSDKBuilder {
         if !response.status().is_success() {
             // If the status is not successful, return an appropriate error
             return Err(ProverSdkErrors::NonceRequestFailed(format!(
-                "Failed to get nonce from URL: {} with status code: {}: {:?}",
+                "Failed to get nonce from URL: {} with status code: {}",
                 url_with_params,
                 response.status(),
-                response.error_for_status().unwrap()
             )));
         }
 

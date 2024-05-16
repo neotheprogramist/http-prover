@@ -35,14 +35,15 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let authorizer = match args.authorized_keys {
+    let authorizer = match args.authorized_keys_path {
         Some(path) => {
             tracing::trace!("Using authorized keys file");
             Authorizer::Persistent(FileAuthorizer::new(path).await?)
         }
         None => {
+            let authorized_keys = args.authorized_keys.unwrap_or_default();
             tracing::trace!("Using memory authorization");
-            Authorizer::Memory(vec![].into())
+            Authorizer::Memory(authorized_keys.into())
         }
     };
 

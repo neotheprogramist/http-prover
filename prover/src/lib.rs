@@ -11,19 +11,21 @@ use clap::{arg, Parser, ValueHint};
 pub struct Args {
     /// Host address to bind the server
     #[arg(long, env, default_value = "0.0.0.0")]
-    host: String,
+    pub host: String,
 
     /// Port to listen on
     #[arg(long, short, env, default_value = "3000")]
-    port: u16,
+    pub port: u16,
     #[arg(long, short, env)]
-    jwt_secret_key: String,
+    pub jwt_secret_key: String,
     #[arg(long, short, env)]
-    message_expiration_time: u32,
+    pub message_expiration_time: u32,
     #[arg(long, short, env)]
-    session_expiration_time: u32,
+    pub session_expiration_time: u32,
     #[arg(long, short = 'k', env)]
-    private_key: String,
+    pub private_key: String,
     #[arg(long, short, env, value_hint = ValueHint::FilePath)]
-    authorized_keys: Option<PathBuf>,
+    pub authorized_keys_path: Option<PathBuf>,
+    #[arg(long, short = 'f', env)]
+    pub authorized_keys: Option<Vec<String>>,
 }
