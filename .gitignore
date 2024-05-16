@@ -26,3 +26,4 @@
 /resources
 sdk/resources
 .cargo/config.toml
+prover/authorized_keys.json
