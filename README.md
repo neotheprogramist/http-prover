@@ -2,14 +2,61 @@
 
 The Prover SDK is a Rust library for interacting with the Prover service. It provides functionality for authentication, proving, and error handling.
 
-## Installation
+## Generating access keys
+
+Before using the prover key has to be authorized by the prover operator. To generate the key use:
+
+```bash
+    cargo run --bin prover-keygen
+```
+
+It will output 2 keys.
+
+- send the public key to the prover operator
+- pass the private key to the sdk to use it.
+
+## Using in code
+
+First parse a private key corresponding to an authorized public key.
+
+```rust
+    ProverAccessKey::from_hex_string(
+        "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740",
+    )
+    .unwrap()
+
+```
+
+Then construct an instance with
+
+```rust
+    let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
+    let url_prover = Url::parse("http://localhost:3000/prove/cairo1").unwrap();
+    let sdk = ProverSDK::new(key, url_auth, url_prover).await?;
+
+```
+
+Then you can use below to prove an execution
+
+```rust
+    let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
+    let proof = sdk.prove(data).await;
+```
+
+# Operating a prover
 
 To run the sdk first make sure prover/authorized_keys.json contains your public_key.
 
 Run the following command in your terminal:
 
 ```bash
- cargo run -p prover -- --jwt-secret-key <ENV_VAR_JWT_SECRET_KEY> --message-expiration-time <MESSAGE_EXPIRATION_TIME> --session-expiration-time <SESSION_EXPIRATION_TIME> --private-key <PRIVATE_KEY>
+ cargo run -p prover --jwt-secret-key <ENV_VAR_JWT_SECRET_KEY> --message-expiration-time <MESSAGE_EXPIRATION_TIME> --session-expiration-time <SESSION_EXPIRATION_TIME> --private-key <PRIVATE_KEY> --authorized-keys <AUTHORIZED_KEY>,<ANOTHER_KEY>
+```
+
+Alternatively use the flag `--authorized-keys-path authorized_keys.json` instead of `--authorized-keys` to load keys from a json file. It needs to have the format below
+
+```json
+["<AUTHORIZED_KEY>", "<ANOTHER_KEY>"]
 ```
 
 Note:

@@ -54,14 +54,13 @@ mod tests {
     async fn test_prover_cairo1_spawn_prover() -> Result<(), ProverSdkErrors> {
         let (_handle, key) = spawn_prover().await;
 
-        let url_auth = Url::parse("http://localhost:3000/auth").unwrap(); // Provide an invalid URL for authentication
+        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
         let url_prover = Url::parse("http://localhost:3000/prove/cairo1").unwrap();
-
-        // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(key, url_auth, url_prover).await?;
 
         let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
         let proof = sdk.prove(data).await;
+
         // If authentication fails, print out the error message
         assert!(proof.is_ok(), "Failed to prove with invalid url");
         // If authentication fails, print out the error message for debugging purposes
