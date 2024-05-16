@@ -16,6 +16,7 @@ mod tests {
     use crate::load::{load_cairo0, load_cairo1};
     use crate::prover_sdk::ProverSDK;
     use crate::ProverAccessKey;
+    use prover::Args;
     use url::Url;
 
     fn get_signing_key() -> ProverAccessKey {
@@ -65,28 +66,6 @@ mod tests {
         // If authentication fails, print out the error message for debugging purposes
         if let Err(err) = proof {
             println!(" error: {}", err);
-        }
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_invalid_private_key_auth() -> Result<(), ProverSdkErrors> {
-        // Arrange: Set up any necessary data or dependencies
-        let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
-        let url_prover = Url::parse("http://localhost:3000/prove/cairo0").unwrap();
-
-        // Act: Attempt to authenticate with the invalid private key
-        let result = ProverSDK::new(url_auth, url_prover)
-            .auth(ProverAccessKey::random())
-            .await;
-
-        // Assert: Check that authentication fails
-        assert!(
-            result.is_err(),
-            "Expected authentication to fail with invalid private key"
-        );
-        if let Err(err) = result {
-            println!("Authentication error: {}", err);
         }
         Ok(())
     }

@@ -1,6 +1,7 @@
 use crate::auth::jwt::encode_jwt;
 use crate::auth::jwt::Keys;
 use crate::prove::errors::ProveError;
+use crate::prove::models::AddAuthorizedRequest;
 use crate::prove::models::{
     GenerateNonceRequest, GenerateNonceResponse, JWTResponse, Nonce, ValidateSignatureRequest,
 };
@@ -14,6 +15,8 @@ use ed25519_dalek::Signature;
 use ed25519_dalek::VerifyingKey;
 use std::collections::HashSet;
 use tokio::{fs::File, io::AsyncReadExt};
+
+use super::authorizer::AuthorizationProvider;
 pub const COOKIE_NAME: &str = "jwt_token";
 
 /// Generates a nonce for a given public key and stores it in the application state.
@@ -34,9 +37,10 @@ pub async fn generate_nonce(
     if params.public_key.trim().is_empty() {
         return Err(ProveError::MissingPublicKey);
     }
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let path = manifest_dir + ("/authorized_keys.json");
-    is_public_key_authorized(&path, &params.public_key).await?;
+    if !state.authorizer.is_authorized(&params.public_key).await? {
+        return Err(ProveError::UnauthorizedPublicKey);
+    }
+
     let message_expiration_time: usize = state.message_expiration_time;
     let nonce: Nonce = Nonce::new(32);
     let nonce_string = nonce.to_string();
@@ -59,9 +63,6 @@ pub async fn generate_nonce(
 /// - `state`: The application state containing nonce information stored in a mutex-guarded HashMap.
 /// - `payload`: JSON payload containing the public key and signature to be validated.
 ///
-/// # Returns
-///
-/// Returns a tuple containing HTTP headers and a JSON response with a JWT token and its expiration time if the signature is valid.
 pub async fn validate_signature(
     State(state): State<AppState>,
     Json(payload): Json<ValidateSignatureRequest>,
@@ -114,6 +115,43 @@ pub async fn validate_signature(
             expiration: session_expiration_time,
         }),
     ))
+}
+
+/// Validates the signature provided in the request payload and generates a JWT token if the signature is valid.
+///
+/// # Parameters
+///
+/// - `state`: The application state containing nonce information stored in a mutex-guarded HashMap.
+/// - `payload`: JSON payload containing the public key to be added and the signature to be validated.
+///
+/// # Returns
+///
+/// Returns a tuple containing HTTP headers and a JSON response with a JWT token and its expiration time if the signature is valid.
+pub async fn add_authorized_key(
+    State(state): State<AppState>,
+    Json(payload): Json<AddAuthorizedRequest>,
+) -> Result<impl IntoResponse, ProveError> {
+    is_public_key_authorized("prover/authorized_keys.json", &payload.authority).await?;
+
+    let nonces = state
+        .nonces
+        .lock()
+        .map_err(|_| ProveError::InternalServerError("Failed to lock state".to_string()))?;
+
+    let user_nonce = nonces.get(&payload.authority).ok_or_else(|| {
+        ProveError::NotFound(format!(
+            "Nonce not found for the provided public key: {}",
+            &payload.authority
+        ))
+    })?;
+
+    let signature_valid = verify_signature(&payload.signature, user_nonce, &payload.authority);
+
+    if !signature_valid {
+        return Err(ProveError::Unauthorized("Invalid signature".to_string()));
+    }
+
+    Ok(())
 }
 
 /// Verifies a signature given a nonce and a public key using ed25519_dalek.

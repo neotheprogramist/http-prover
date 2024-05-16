@@ -1,6 +1,6 @@
 use crate::{
-    prove::{self},
-    Args,
+    auth::authorizer::{Authorizer, FileAuthorizer},
+    prove, Args,
 };
 use axum::{routing::get, Router};
 use prove::errors::ServerError;
@@ -22,16 +22,29 @@ pub struct AppState {
     pub private_key: String,
     pub jwt_secret_key: String,
     pub nonces: Arc<Mutex<HashMap<String, String>>>,
+    pub authorizer: Authorizer,
 }
 
-pub async fn start(args: &Args) -> Result<(), ServerError> {
+pub async fn start(args: Args) -> Result<(), ServerError> {
+    let authorizer = match args.authorized_keys {
+        Some(path) => {
+            tracing::info!("Using authorized keys file");
+            Authorizer::File(FileAuthorizer::new(path).await?)
+        }
+        None => {
+            tracing::info!("Using open authorization");
+            Authorizer::Open
+        }
+    };
+
     let state: AppState = AppState {
         prover_image_name: "Sample".to_string(),
         nonces: Arc::new(Mutex::new(HashMap::new())),
         message_expiration_time: args.message_expiration_time as usize,
         session_expiration_time: args.session_expiration_time as usize,
-        jwt_secret_key: args.jwt_secret_key.clone(),
-        private_key: args.private_key.clone(),
+        jwt_secret_key: args.jwt_secret_key,
+        private_key: args.private_key,
+        authorizer,
     };
     // Enable tracing.
     tracing_subscriber::registry()

@@ -70,6 +70,15 @@ pub struct ValidateSignatureRequest {
 
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize)]
+pub struct AddAuthorizedRequest {
+    #[serde_as(as = "DisplayFromStr")]
+    pub signature: Signature,
+    pub authority: String,
+    pub new_key: String,
+}
+
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct JWTResponse {
     #[serde_as(as = "DisplayFromStr")]
     pub jwt_token: String,

@@ -4,6 +4,9 @@ use podman::process::ProcessError;
 use serde_json::json;
 use std::{env::VarError, net::AddrParseError};
 use thiserror::Error;
+
+use crate::auth::authorizer::AuthorizerError;
+
 #[derive(Debug, Error)]
 pub enum ServerError {
     #[error("server error")]
@@ -11,6 +14,9 @@ pub enum ServerError {
 
     #[error("failed to parse address")]
     AddressParse(#[from] AddrParseError),
+
+    #[error("failed to initializer authorizer")]
+    AuthorizerCreation(#[from] AuthorizerError),
 }
 
 #[derive(Error, Debug)]
@@ -49,6 +55,9 @@ pub enum ProveError {
 
     #[error("File read error")]
     FileReadError(#[from] std::io::Error),
+
+    #[error("Authorization failure")]
+    AuthorizationFailure(#[from] AuthorizerError),
 }
 
 impl IntoResponse for ProveError {
@@ -81,6 +90,9 @@ impl IntoResponse for ProveError {
             }
             ProveError::EnvVarFailed(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             ProveError::HexDecodeError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            ProveError::AuthorizationFailure(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
         };
         let body = Json(json!({ "error": error_message }));
         (status, body).into_response()

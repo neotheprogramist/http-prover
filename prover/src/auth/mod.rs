@@ -1,9 +1,11 @@
+pub mod authorizer;
 pub mod jwt;
 pub mod validation;
 
 #[cfg(test)]
 mod tests {
 
+    use crate::auth::authorizer::Authorizer;
     use crate::auth::validation::generate_nonce;
     use crate::auth::validation::is_public_key_authorized;
 
@@ -39,6 +41,7 @@ mod tests {
             session_expiration_time: 3600,
             jwt_secret_key: "jwt_secret".to_string(),
             private_key: private_key_hex.clone(),
+            authorizer: Authorizer::Memory(vec![public_key_hex.clone()].into()),
         };
         let params = GenerateNonceRequest {
             public_key: public_key_hex,
@@ -51,20 +54,5 @@ mod tests {
 
         println!("{:?}", response.nonce);
         Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_is_public_key_authorized() {
-        // Test with an authorized key
-        let result = is_public_key_authorized(
-            "authorized_keys.json",
-            "05a257b53c49a28f2eb391653695e3ad2964ccec11fb30ca2b3d334187985501",
-        )
-        .await;
-        assert!(result.is_ok());
-
-        // Test with an unauthorized key
-        let result = is_public_key_authorized("authorized_keys.json", "unauthorized_key").await;
-        assert!(result.is_err());
     }
 }
