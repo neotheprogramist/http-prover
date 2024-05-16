@@ -9,7 +9,7 @@ To run the sdk first make sure prover/authorized_keys.json contains your public_
 Run the following command in your terminal:
 
 ```bash
- cargo run -p prover --jwt-secret-key <ENV_VAR_JWT_SECRET_KEY> --message-expiration-time <MESSAGE_EXPIRATION_TIME> --session-expiration-time <SESSION_EXPIRATION_TIME> --private-key <PRIVATE_KEY>
+ cargo run -p prover -- --jwt-secret-key <ENV_VAR_JWT_SECRET_KEY> --message-expiration-time <MESSAGE_EXPIRATION_TIME> --session-expiration-time <SESSION_EXPIRATION_TIME> --private-key <PRIVATE_KEY>
 ```
 
 Note:
@@ -26,7 +26,7 @@ Authenticate with the Prover service using your private key and the authenticati
     async fn main() -> Result<(), ProverSdkErrors> {
         let private_key_hex : String= env::var("PRIVATE_KEY")?;
         let url_auth =  "http://localhost:3000/auth";
-        let url_prover = "http://localhost:3000/prove/state-diff-commitment";
+        let url_prover = "http://localhost:3000/prove/cairo1";
 
         let result = ProverSDK::new(url_auth, url_prover)
             .auth(&private_key_hex)
