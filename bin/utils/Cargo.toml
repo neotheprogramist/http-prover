@@ -4,9 +4,9 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-sdk.workspace = true
 clap.workspace = true
-url.workspace = true
-tokio.workspace = true
 ed25519-dalek.workspace = true
 hex.workspace = true
+sdk.workspace = true
+tokio.workspace = true
+url.workspace = true
