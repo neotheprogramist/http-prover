@@ -1,5 +1,5 @@
 [package]
-name = "sdk"
+name = "prover-sdk"
 version = "0.1.0"
 edition = "2021"
 
