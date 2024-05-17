@@ -30,9 +30,8 @@ First parse a private key corresponding to an authorized public key.
 Then construct an instance with
 
 ```rust
-    let url_auth = Url::parse("http://localhost:3000/auth").unwrap();
-    let url_prover = Url::parse("http://localhost:3000/prove/cairo1").unwrap();
-    let sdk = ProverSDK::new(key, url_auth, url_prover).await?;
+    let prover_url = Url::parse("http://localhost:3000").unwrap();
+    let sdk = ProverSDK::new(key, prover_url).await?;
 
 ```
 
@@ -40,7 +39,7 @@ Then you can use below to prove an execution
 
 ```rust
     let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
-    let proof = sdk.prove(data).await;
+    let proof = sdk.prove_cairo1(data).await;
 ```
 
 # Operating a prover

@@ -14,10 +14,7 @@ pub struct Args {
     pub added_key: String,
 
     #[arg(long, short, env)]
-    pub register_url: Url,
-
-    #[arg(long, short, env)]
-    pub auth_url: Url,
+    pub prover_url: Url,
 }
 
 #[tokio::main]
@@ -26,7 +23,7 @@ async fn main() {
 
     let key = ProverAccessKey::from_hex_string(&args.private_key).unwrap();
 
-    let mut sdk = ProverSDK::new(key, args.auth_url.clone(), args.auth_url)
+    let mut sdk = ProverSDK::new(key, args.prover_url)
         .await
         .expect("Failed to create SDK instance");
 
@@ -35,5 +32,5 @@ async fn main() {
     array.copy_from_slice(&bytes);
     let added_key = VerifyingKey::from_bytes(&array).unwrap();
 
-    sdk.register(added_key, args.register_url).await.unwrap();
+    sdk.register(added_key).await.unwrap();
 }

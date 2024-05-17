@@ -13,7 +13,7 @@ use std::sync::Arc;
 pub struct ProverSDKBuilder {
     client: Client,
     auth: Url,
-    prover: Url,
+    base_url: Url,
     signing_key: Option<ProverAccessKey>,
     jwt_token: Option<String>,
 }
@@ -29,11 +29,11 @@ impl ProverSDKBuilder {
     /// # Returns
     ///
     /// Returns a new instance of ProverSDKBuilder.
-    pub fn new(auth: Url, prover: Url) -> Self {
+    pub fn new(auth: Url, base_url: Url) -> Self {
         ProverSDKBuilder {
             client: Client::new(),
             auth,
-            prover,
+            base_url,
             signing_key: None,
             jwt_token: None,
         }
@@ -214,10 +214,15 @@ impl ProverSDKBuilder {
             .ok_or(ProverSdkErrors::SigningKeyNotFound)?;
         let jwt_token = self.jwt_token.ok_or(ProverSdkErrors::JwtTokenNotFound)?;
 
+        let prover = self
+            .base_url
+            .join("/prove")
+            .map_err(ProverSdkErrors::UrlParseError)?;
+
         let jar = Jar::default();
         jar.add_cookie_str(
             &format!("jwt_token={}; HttpOnly; Secure; Path=/", jwt_token),
-            &self.prover,
+            &prover,
         );
 
         let client = reqwest::Client::builder()
@@ -229,7 +234,19 @@ impl ProverSDKBuilder {
 
         Ok(ProverSDK {
             client,
-            prover: self.prover,
+            prover_cairo0: self
+                .base_url
+                .join("/prove/cairo0")
+                .map_err(ProverSdkErrors::UrlParseError)?,
+            prover_cairo1: self
+                .base_url
+                .join("/prove/cairo1")
+                .map_err(ProverSdkErrors::UrlParseError)?,
+            register: self
+                .base_url
+                .join("/register")
+                .map_err(ProverSdkErrors::UrlParseError)?,
+
             authority: signing_key,
         })
     }

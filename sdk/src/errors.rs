@@ -52,4 +52,7 @@ pub enum ProverSdkErrors {
 
     #[error("Failed to decode hex")]
     FromHexError(#[from] FromHexError),
+
+    #[error("Failed to parse URL")]
+    UrlParseError(#[from] url::ParseError),
 }
