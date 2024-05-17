@@ -1,5 +1,4 @@
 use bytes::{Bytes, BytesMut};
-use ed25519_dalek::Signature;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -57,14 +56,6 @@ pub struct GenerateNonceRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PublicKeyQuery {
-    pub public_key: String,
-}
-
-#[serde_as]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ValidateSignatureRequest {
-    #[serde_as(as = "DisplayFromStr")]
-    pub signature: Signature,
     pub public_key: String,
 }
 

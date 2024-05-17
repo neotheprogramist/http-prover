@@ -1,33 +1,31 @@
 use crate::prove::errors::{AuthError, ProveError};
+use crate::server::AppState;
+use axum::extract::FromRef;
 use axum::{async_trait, extract::FromRequestParts, http::header::COOKIE, http::request::Parts};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
 
-static KEYS: Lazy<Keys> = Lazy::new(|| {
-    let secret = std::env::var("ENV_VAR_JWT_SECRET_KEY").expect("JWT_SECRET must be set");
-    Keys::new(secret.as_bytes())
-});
-
-pub fn encode_jwt(sub: &str, exp: usize) -> Result<String, ProveError> {
+pub fn encode_jwt(sub: &str, exp: usize, keys: Keys) -> Result<String, ProveError> {
     let claims = Claims {
         sub: sub.to_owned(),
         exp,
     };
-    encode(&Header::default(), &claims, &KEYS.encoding)
+    encode(&Header::default(), &claims, &keys.encoding)
         .map_err(|e| ProveError::InternalServerError(format!("JWT generation failed: {}", e)))
 }
 
 #[async_trait]
 impl<S> FromRequestParts<S> for Claims
 where
+    AppState: FromRef<S>,
     S: Send + Sync,
 {
     type Rejection = ProveError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let store = AppState::from_ref(_state);
         // Extract the 'Cookie' header
         let header_value = parts
             .headers
@@ -56,8 +54,12 @@ where
             .get("jwt_token")
             .ok_or(ProveError::Auth(AuthError::MissingAuthorizationHeader))?;
 
-        let token_data = decode::<Claims>(token, &KEYS.decoding, &Validation::default())
-            .map_err(|_| ProveError::Auth(AuthError::InvalidToken))?;
+        let token_data = decode::<Claims>(
+            token,
+            &Keys::new(&store.jwt_secret_key.into_bytes()).decoding,
+            &Validation::default(),
+        )
+        .map_err(|_| ProveError::Auth(AuthError::InvalidToken))?;
 
         Ok(token_data.claims)
     }
@@ -72,13 +74,13 @@ impl Display for Claims {
         write!(f, "sub: {}", self.sub)
     }
 }
-struct Keys {
+pub struct Keys {
     encoding: EncodingKey,
     decoding: DecodingKey,
 }
 
 impl Keys {
-    fn new(secret: &[u8]) -> Self {
+    pub fn new(secret: &[u8]) -> Self {
         Self {
             encoding: EncodingKey::from_secret(secret),
             decoding: DecodingKey::from_secret(secret),

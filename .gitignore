@@ -19,10 +19,5 @@
 # vscode
 **/.vscode/
 
-/.venv
-
-/.snfoundry_cache
-
 /resources
-sdk/resources
-.cargo/config.toml
+/.cargo

@@ -1,18 +1,20 @@
+use crate::access_key::ProverAccessKey;
 use crate::errors::ProverSdkErrors;
-use crate::models::{bytes_to_hex_string, JWTResponse};
 use crate::prover_sdk::ProverSDK;
-use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
+
+use common::{bytes_to_hex_string, JWTResponse, ValidateSignatureRequest};
+use ed25519_dalek::{Signature, Signer, VerifyingKey};
 use reqwest::{cookie::Jar, Client, Url};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::sync::Arc;
 
 /// ProverSDKBuilder is a builder for constructing a ProverSDK instance.
 #[derive(Debug)]
 pub struct ProverSDKBuilder {
     client: Client,
-    url_auth: String,
-    url_prover: String,
-    signing_key: Option<SigningKey>,
+    auth: Url,
+    base_url: Url,
+    signing_key: Option<ProverAccessKey>,
     jwt_token: Option<String>,
 }
 
@@ -27,11 +29,11 @@ impl ProverSDKBuilder {
     /// # Returns
     ///
     /// Returns a new instance of ProverSDKBuilder.
-    pub fn new(url_auth: &str, url_prover: &str) -> Self {
+    pub fn new(auth: Url, base_url: Url) -> Self {
         ProverSDKBuilder {
             client: Client::new(),
-            url_auth: url_auth.to_string(),
-            url_prover: url_prover.to_string(),
+            auth,
+            base_url,
             signing_key: None,
             jwt_token: None,
         }
@@ -47,13 +49,7 @@ impl ProverSDKBuilder {
     ///
     /// Returns a Result containing the ProverSDKBuilder instance with authentication
     /// information if successful, or a ProverSdkErrors if an error occurs.
-    pub async fn auth(mut self, private_key_hex: &str) -> Result<Self, ProverSdkErrors> {
-        // Convert the hexadecimal private key string into bytes
-        let private_key_bytes = hex::decode(private_key_hex)?;
-        let mut private_key_array = [0u8; 32];
-        private_key_array.copy_from_slice(&private_key_bytes);
-
-        let signing_key = SigningKey::from_bytes(&private_key_array);
+    pub async fn auth(mut self, signing_key: ProverAccessKey) -> Result<Self, ProverSdkErrors> {
         self.signing_key = Some(signing_key);
         let jwt_response = self.get_jwt_token().await?;
         self.jwt_token = Some(jwt_response.jwt_token);
@@ -70,14 +66,14 @@ impl ProverSDKBuilder {
             .signing_key
             .as_ref()
             .ok_or(ProverSdkErrors::SigningKeyNotFound)?;
-        let public_key = signing_key.verifying_key();
+
+        let public_key = signing_key.0.verifying_key();
 
         let nonce = self.get_nonce(&public_key).await?;
 
-        let signed_nonce = signing_key.sign(nonce.as_bytes());
+        let signed_nonce = signing_key.0.sign(nonce.as_bytes());
 
-        self.validate_signature(&public_key, &nonce, &signed_nonce)
-            .await
+        self.validate_signature(public_key, signed_nonce).await
     }
 
     /// Asynchronously retrieves a nonce from the authentication service using the provided public key.
@@ -92,7 +88,7 @@ impl ProverSDKBuilder {
     async fn get_nonce(&self, public_key: &VerifyingKey) -> Result<String, ProverSdkErrors> {
         let url_with_params = format!(
             "{}?public_key={}",
-            &self.url_auth,
+            self.auth,
             bytes_to_hex_string(public_key.as_bytes())
         );
 
@@ -110,7 +106,7 @@ impl ProverSDKBuilder {
             return Err(ProverSdkErrors::NonceRequestFailed(format!(
                 "Failed to get nonce from URL: {} with status code: {}",
                 url_with_params,
-                response.status()
+                response.status(),
             )));
         }
 
@@ -149,21 +145,19 @@ impl ProverSDKBuilder {
     /// Returns a Result containing a JWTResponse if successful, or a ProverSdkErrors if an error occurs.
     async fn validate_signature(
         &self,
-        public_key: &VerifyingKey,
-        nonce: &String,
-        signed_nonce: &Signature,
+        public_key: VerifyingKey,
+        signed_nonce: Signature,
     ) -> Result<JWTResponse, ProverSdkErrors> {
-        let data = json!({
-            "public_key": bytes_to_hex_string(&public_key.to_bytes()),
-            "nonce": nonce,
-            "signature": bytes_to_hex_string(&signed_nonce.to_bytes()),
-        });
+        let req = ValidateSignatureRequest {
+            public_key,
+            signature: signed_nonce,
+        };
 
         let response = match self
             .client
-            .post(&self.url_auth)
+            .post(self.auth.clone())
             .header(reqwest::header::CONTENT_TYPE, "application/json")
-            .json(&data)
+            .json(&req)
             .send()
             .await
         {
@@ -171,7 +165,7 @@ impl ProverSDKBuilder {
             Err(reqwest_error) => {
                 return Err(ProverSdkErrors::ValidateSignatureRequestFailed(format!(
                     "Failed to send HTTP request to URL: {}. Error: {}",
-                    &self.url_auth, reqwest_error
+                    self.auth, reqwest_error
                 )));
             }
         };
@@ -180,7 +174,7 @@ impl ProverSDKBuilder {
             return Err(ProverSdkErrors::ValidateSignatureResponseError(format!(
                 "Received unsuccessful status code ({}) from URL: {}",
                 response.status(),
-                &self.url_auth
+                self.auth
             )));
         }
 
@@ -189,7 +183,7 @@ impl ProverSDKBuilder {
             Err(json_error) => {
                 return Err(ProverSdkErrors::JsonParsingFailed(format!(
                     "Failed to parse JSON response from URL: {}. Error: {}",
-                    &self.url_auth, json_error
+                    self.auth, json_error
                 )));
             }
         };
@@ -215,17 +209,20 @@ impl ProverSDKBuilder {
     /// Returns a Result containing the constructed ProverSDK instance if successful,
     /// or a ProverSdkErrors if an error occurs.
     pub fn build(self) -> Result<ProverSDK, ProverSdkErrors> {
-        let _signing_key = self
+        let signing_key = self
             .signing_key
             .ok_or(ProverSdkErrors::SigningKeyNotFound)?;
         let jwt_token = self.jwt_token.ok_or(ProverSdkErrors::JwtTokenNotFound)?;
 
-        let url_prover = Url::parse(&self.url_prover)?;
+        let prover = self
+            .base_url
+            .join("/prove")
+            .map_err(ProverSdkErrors::UrlParseError)?;
 
         let jar = Jar::default();
         jar.add_cookie_str(
             &format!("jwt_token={}; HttpOnly; Secure; Path=/", jwt_token),
-            &url_prover,
+            &prover,
         );
 
         let client = reqwest::Client::builder()
@@ -237,7 +234,20 @@ impl ProverSDKBuilder {
 
         Ok(ProverSDK {
             client,
-            url_prover: self.url_prover,
+            prover_cairo0: self
+                .base_url
+                .join("/prove/cairo0")
+                .map_err(ProverSdkErrors::UrlParseError)?,
+            prover_cairo1: self
+                .base_url
+                .join("/prove/cairo1")
+                .map_err(ProverSdkErrors::UrlParseError)?,
+            register: self
+                .base_url
+                .join("/register")
+                .map_err(ProverSdkErrors::UrlParseError)?,
+
+            authority: signing_key,
         })
     }
 }
