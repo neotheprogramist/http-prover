@@ -5,14 +5,14 @@ use crate::{
     },
     prove, Args,
 };
-use axum::{routing::get, Router};
+use axum::Router;
 use prove::errors::ServerError;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
 use std::{net::SocketAddr, time::Duration};
-use tokio::{net::TcpListener, time::sleep};
+use tokio::net::TcpListener;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utils::shutdown::shutdown_signal;
@@ -22,7 +22,6 @@ pub struct AppState {
     pub prover_image_name: String,
     pub message_expiration_time: usize,
     pub session_expiration_time: usize,
-    pub private_key: String,
     pub jwt_secret_key: String,
     pub nonces: Arc<Mutex<HashMap<String, String>>>,
     pub authorizer: Authorizer,
@@ -56,7 +55,6 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         message_expiration_time: args.message_expiration_time as usize,
         session_expiration_time: args.session_expiration_time as usize,
         jwt_secret_key: args.jwt_secret_key,
-        private_key: args.private_key,
         authorizer,
     };
 
@@ -64,8 +62,6 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
     let app = Router::new()
         .nest("/", auth::auth(&state))
         .nest("/prove", prove::router(&state))
-        .route("/slow", get(|| sleep(Duration::from_secs(5))))
-        .route("/forever", get(std::future::pending::<()>))
         .layer((
             TraceLayer::new_for_http(),
             TimeoutLayer::new(Duration::from_secs(300)),

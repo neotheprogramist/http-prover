@@ -54,7 +54,6 @@ mod tests {
             message_expiration_time: 3600,
             session_expiration_time: 3600,
             jwt_secret_key: "jwt_secret".to_string(),
-            private_key: private_key_hex.clone(),
             authorizer: Authorizer::Memory(vec![public_key_hex.clone()].into()),
         };
         let params = GenerateNonceRequest {

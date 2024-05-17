@@ -40,7 +40,6 @@ mod tests {
             jwt_secret_key: "placeholder".to_string(),
             message_expiration_time: 60,
             session_expiration_time: 3600,
-            private_key: "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740".into(),
             authorized_keys: Some(vec![encoded_key]),
             authorized_keys_path: None,
         };
