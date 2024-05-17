@@ -20,7 +20,7 @@ async-session = "3.0.0"
 axum = { version = "0.7.5", features = ["http2", "macros", "multipart", "ws"] }
 bytes = "1.4.0"
 cairo-proof-parser = { git = "https://github.com/cartridge-gg/cairo-proof-parser.git" }
-chrono = "0.4.28"
+chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive", "env"] }
 common = { path = "crates/common" }
 curve25519-dalek = "4.1.2"
