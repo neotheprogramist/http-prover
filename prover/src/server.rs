@@ -1,5 +1,8 @@
 use crate::{
-    auth::authorizer::{Authorizer, FileAuthorizer},
+    auth::{
+        self,
+        authorizer::{Authorizer, FileAuthorizer},
+    },
     prove, Args,
 };
 use axum::{routing::get, Router};
@@ -59,7 +62,7 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
 
     // Create a regular axum app.
     let app = Router::new()
-        .nest("/", prove::auth(&state))
+        .nest("/", auth::auth(&state))
         .nest("/prove", prove::router(&state))
         .route("/slow", get(|| sleep(Duration::from_secs(5))))
         .route("/forever", get(std::future::pending::<()>))

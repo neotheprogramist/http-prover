@@ -1,20 +1,10 @@
 use crate::server::AppState;
-use axum::{routing::get, routing::post, Router};
+use axum::{routing::post, Router};
 mod cairo0;
 mod cairo1;
 pub mod errors;
 pub mod models;
 
-pub fn auth(app_state: &AppState) -> Router {
-    Router::new()
-        .route("/auth", get(crate::auth::validation::generate_nonce))
-        .route("/auth", post(crate::auth::validation::validate_signature))
-        .route(
-            "/register",
-            post(crate::auth::validation::add_authorized_key),
-        )
-        .with_state(app_state.clone())
-}
 pub fn router(app_state: &AppState) -> Router {
     Router::new()
         .route("/cairo0", post(cairo0::root))

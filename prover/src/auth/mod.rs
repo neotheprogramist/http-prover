@@ -1,6 +1,21 @@
+use axum::{routing::get, routing::post, Router};
+
+use crate::server::AppState;
+
 pub mod authorizer;
 pub mod jwt;
 pub mod validation;
+
+pub fn auth(app_state: &AppState) -> Router {
+    Router::new()
+        .route("/auth", get(crate::auth::validation::generate_nonce))
+        .route("/auth", post(crate::auth::validation::validate_signature))
+        .route(
+            "/register",
+            post(crate::auth::validation::add_authorized_key),
+        )
+        .with_state(app_state.clone())
+}
 
 #[cfg(test)]
 mod tests {

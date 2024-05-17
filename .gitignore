@@ -19,11 +19,5 @@
 # vscode
 **/.vscode/
 
-/.venv
-
-/.snfoundry_cache
-
 /resources
-sdk/resources
-.cargo/config.toml
-prover/authorized_keys.json
+/.cargo
