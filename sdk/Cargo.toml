@@ -23,3 +23,6 @@ rand.workspace = true
 ed25519-dalek.workspace = true
 reqwest_cookie_store.workspace = true
 url.workspace = true
+
+[dev-dependencies]
+prover.workspace = true

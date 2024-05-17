@@ -1,16 +1,10 @@
 use crate::server::AppState;
-use axum::{routing::get, routing::post, Router};
+use axum::{routing::post, Router};
 mod cairo0;
 mod cairo1;
 pub mod errors;
 pub mod models;
 
-pub fn auth(app_state: &AppState) -> Router {
-    Router::new()
-        .route("/auth", get(crate::auth::validation::generate_nonce))
-        .route("/auth", post(crate::auth::validation::validate_signature))
-        .with_state(app_state.clone())
-}
 pub fn router(app_state: &AppState) -> Router {
     Router::new()
         .route("/cairo0", post(cairo0::root))
@@ -52,8 +46,6 @@ mod tests {
     }
 
     async fn read_json_file(file_path: &str) -> Result<Cairo0ProverInput, ProveError> {
-        println!("{:?}", file_path);
-
         let mut file = File::open(file_path).await?;
         let mut json_string = String::new();
         file.read_to_string(&mut json_string).await?;

@@ -8,7 +8,7 @@ async fn main() -> Result<(), ServerError> {
     let args: Args = Args::parse();
 
     // Start the server with the specified address
-    start(&args).await?;
+    start(args).await?;
 
     Ok(())
 }
