@@ -3,7 +3,7 @@ use ed25519_dalek::SigningKey;
 use prefix_hex::Error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProverAccessKey(pub SigningKey);
 
 impl ProverAccessKey {

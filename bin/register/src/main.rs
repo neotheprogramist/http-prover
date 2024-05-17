@@ -1,6 +1,6 @@
 use clap::{arg, Parser};
 use ed25519_dalek::VerifyingKey;
-use sdk::{ProverAccessKey, ProverSDK};
+use prover_sdk::{ProverAccessKey, ProverSDK};
 use url::Url;
 
 /// Command line arguments for the server
