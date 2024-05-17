@@ -7,7 +7,7 @@ use ed25519_dalek::{ed25519::signature::SignerMut, VerifyingKey};
 use reqwest::Client;
 use url::Url;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// ProverSDK is a struct representing a client for interacting with the Prover service.
 pub struct ProverSDK {
     pub client: Client,
