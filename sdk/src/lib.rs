@@ -5,6 +5,7 @@ pub mod prove_sdk_builder;
 mod prover_sdk;
 
 pub use access_key::ProverAccessKey;
+pub use common::{Cairo0ProverInput, Cairo1CompiledProgram, Cairo1ProverInput, CompiledProgram};
 pub use common::{Cairo0ProverInput, Cairo1ProverInput};
 pub use common::{Cairo0ProverInput, Cairo1ProverInput};
 pub use errors::ProverSdkErrors;
