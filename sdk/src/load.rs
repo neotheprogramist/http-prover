@@ -23,6 +23,4 @@ pub async fn load_cairo1(file_path: PathBuf) -> Result<Cairo1ProverInput, Prover
     file.read_to_string(&mut json_string).await?;
 
     let json_value: Cairo1ProverInput = serde_json::from_str(&json_string)?;
-
-    Ok(json_value)
 }
