@@ -6,6 +6,7 @@ mod prover_sdk;
 
 pub use access_key::ProverAccessKey;
 pub use common::{Cairo0ProverInput, Cairo1ProverInput};
+pub use common::{Cairo0ProverInput, Cairo1ProverInput};
 pub use errors::ProverSdkErrors;
 pub use load::{load_cairo0, load_cairo1};
 pub use prover_sdk::ProverSDK;
@@ -25,7 +26,7 @@ mod tests {
 
     fn get_signing_key() -> ProverAccessKey {
         ProverAccessKey::from_hex_string(
-            "afe68fcd03b68a4b3dcd6d591d77afd81587189a4e68b2f9ac7e50bd50063ade",
+            "c8664097c1bf5b771b8aef6f6244ec86a0f5a4012f6a6ff5e719ce7a5c6d9cb5",
             // Corresponding to 76b4680bd6cf336789a06ccf100c1601fca5e8c41b2d87c784f7f5953a4d346e public key.
         )
         .unwrap()
