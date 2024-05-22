@@ -7,9 +7,6 @@ use crate::errors::ProverSdkErrors;
 
 pub async fn load_cairo0(file_path: PathBuf) -> Result<Cairo0ProverInput, ProverSdkErrors> {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-
-    println!("manifest_dir: {:?}", manifest_dir.join(file_path.clone()));
-
     let mut file = File::open(manifest_dir.join(file_path)).await?;
     let mut json_string = String::new();
     file.read_to_string(&mut json_string).await?;
@@ -21,9 +18,6 @@ pub async fn load_cairo0(file_path: PathBuf) -> Result<Cairo0ProverInput, Prover
 
 pub async fn load_cairo1(file_path: PathBuf) -> Result<Cairo1ProverInput, ProverSdkErrors> {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-
-    println!("manifest_dir: {:?}", manifest_dir.join(file_path.clone()));
-
     let mut file = File::open(manifest_dir.join(file_path)).await?;
     let mut json_string = String::new();
     file.read_to_string(&mut json_string).await?;
