@@ -1,5 +1,4 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
-use hex::FromHexError;
 use podman::process::ProcessError;
 use serde_json::json;
 use std::{env::VarError, net::AddrParseError};
@@ -28,7 +27,8 @@ pub enum ProveError {
     UnauthorizedPublicKey,
 
     #[error("HexDecode Error")]
-    HexDecodeError(#[from] FromHexError),
+    HexDecodeError(String),
+
     #[error("Failed to read env variable")]
     EnvVarFailed(#[from] VarError),
 

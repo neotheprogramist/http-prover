@@ -66,7 +66,7 @@ pub async fn validate_signature(
     State(state): State<AppState>,
     Json(payload): Json<ValidateSignatureRequest>,
 ) -> Result<impl IntoResponse, ProveError> {
-    let encoded_key = hex::encode(payload.public_key.to_bytes());
+    let encoded_key = prefix_hex::encode(payload.public_key.to_bytes());
 
     if !state.authorizer.is_authorized(&encoded_key).await? {
         return Err(ProveError::UnauthorizedPublicKey);
@@ -133,7 +133,7 @@ pub async fn add_authorized_key(
     State(state): State<AppState>,
     Json(payload): Json<AddAuthorizedRequest>,
 ) -> Result<impl IntoResponse, ProveError> {
-    let encoded_key = hex::encode(payload.new_key.to_bytes());
+    let encoded_key = prefix_hex::encode(payload.new_key.to_bytes());
 
     // if !state.authorizer.is_authorized(&encoded_key).await? {
     //     return Err(ProveError::UnauthorizedPublicKey);
@@ -161,7 +161,7 @@ pub async fn add_authorized_key(
 ///
 /// Returns `true` if the signature is valid; `false` otherwise.
 pub fn verify_signature(signature: &Signature, nonce: &str, public_key_hex: &str) -> bool {
-    let public_key_bytes = match hex::decode(public_key_hex) {
+    let public_key_bytes = match prefix_hex::decode::<Vec<u8>>(public_key_hex) {
         Ok(bytes) => bytes,
         Err(_) => return false,
     };

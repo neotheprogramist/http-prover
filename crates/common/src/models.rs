@@ -19,5 +19,5 @@ pub struct RequestCreateContract {
 }
 
 pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
-    hex::encode(bytes)
+    prefix_hex::encode(bytes)
 }

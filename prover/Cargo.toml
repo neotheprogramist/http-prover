@@ -13,7 +13,6 @@ clap.workspace = true
 common.workspace = true
 curve25519-dalek.workspace = true
 ed25519-dalek.workspace = true
-hex.workspace = true
 jsonwebtoken.workspace = true
 lazy_static.workspace = true
 podman.workspace = true

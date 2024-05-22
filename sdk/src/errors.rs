@@ -1,4 +1,3 @@
-use hex::FromHexError;
 use reqwest::Error as ReqwestError;
 use std::env::VarError;
 use thiserror::Error;
@@ -51,7 +50,7 @@ pub enum ProverSdkErrors {
     ValidateSignatureRequestFailed(String),
 
     #[error("Failed to decode hex")]
-    FromHexError(#[from] FromHexError),
+    FromHexError(String),
 
     #[error("Failed to parse URL")]
     UrlParseError(#[from] url::ParseError),

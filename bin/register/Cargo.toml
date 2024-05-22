@@ -1,11 +1,12 @@
 [package]
-name = "common"
+name = "register"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
+clap.workspace = true
 ed25519-dalek.workspace = true
+sdk.workspace = true
 prefix-hex.workspace = true
-serde_json.workspace = true
-serde_with.workspace = true
-serde.workspace = true
+tokio.workspace = true
+url.workspace = true

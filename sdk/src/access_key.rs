@@ -1,6 +1,6 @@
 use common::bytes_to_hex_string;
 use ed25519_dalek::SigningKey;
-use hex::FromHexError;
+use prefix_hex::Error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
@@ -11,8 +11,8 @@ impl ProverAccessKey {
         ProverAccessKey(private_key)
     }
 
-    pub fn from_hex_string(hex_string: &str) -> Result<Self, FromHexError> {
-        let bytes = hex::decode(&hex_string)?;
+    pub fn from_hex_string(hex_string: &str) -> Result<Self, Error> {
+        let bytes = prefix_hex::decode::<Vec<u8>>(&hex_string)?;
         let mut array = [0u8; 32];
         array.copy_from_slice(&bytes);
         let signer = SigningKey::from_bytes(&array);

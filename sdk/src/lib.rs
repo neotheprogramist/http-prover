@@ -32,7 +32,7 @@ mod tests {
 
     async fn spawn_prover() -> (JoinHandle<()>, ProverAccessKey) {
         let key = ProverAccessKey::generate();
-        let encoded_key = hex::encode(key.0.verifying_key().to_bytes());
+        let encoded_key = prefix_hex::encode(key.0.verifying_key().to_bytes());
 
         let args = Args {
             host: "0.0.0.0".to_string(),

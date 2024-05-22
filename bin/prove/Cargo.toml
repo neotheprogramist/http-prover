@@ -1,12 +1,12 @@
 [package]
-name = "prover-utils"
+name = "prove"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 clap.workspace = true
 ed25519-dalek.workspace = true
-hex.workspace = true
 sdk.workspace = true
+prefix-hex.workspace = true
 tokio.workspace = true
 url.workspace = true
