@@ -10,3 +10,5 @@ sdk.workspace = true
 prefix-hex.workspace = true
 tokio.workspace = true
 url.workspace = true
+serde.workspace = true
+serde_json.workspace = true
