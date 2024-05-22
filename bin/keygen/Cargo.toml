@@ -4,4 +4,4 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-sdk.workspace = true
+prover-sdk.workspace = true
