@@ -50,5 +50,5 @@ tower-http = { version = "0.5.2", features = [
 ] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-url = "2.5.0"
+url = { version = "2.5.0", features = [ "serde" ] }
 utils = { path = "crates/utils" }
