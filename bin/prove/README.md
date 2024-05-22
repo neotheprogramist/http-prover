@@ -20,3 +20,10 @@ input format
     proof
 }
 ```
+# to run tests
+```
+cargo test --package prove --test prove -- test_cairo0_fibonacci
+```
+```
+cargo test --package prove --test prove -- test_cairo1_differ
+``

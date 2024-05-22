@@ -36,7 +36,7 @@ pub struct CliInput {
     pub prover_url: Url,
 }
 
-pub async fn prove(args: CliInput, input: String) -> Result<(), ProveError> {
+pub async fn prove(args: CliInput, input: String) -> Result<String, ProveError> {
     let secret_key =
         ProverAccessKey::from_hex_string(&args.prover_key).map_err(ProveError::DecodeKey)?;
     let sdk = ProverSDK::new(secret_key, args.prover_url)
@@ -60,10 +60,5 @@ pub async fn prove(args: CliInput, input: String) -> Result<(), ProveError> {
     let proof_json: serde_json::Value =
         serde_json::from_str(&proof).expect("Failed to parse result");
 
-    println!(
-        "{}",
-        serde_json::to_string_pretty(&proof_json).expect("Failed to serialize result")
-    );
-
-    Ok(())
+    Ok(serde_json::to_string_pretty(&proof_json).expect("Failed to serialize result"))
 }
