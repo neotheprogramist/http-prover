@@ -20,6 +20,18 @@ input format
     proof
 }
 ```
+# testing prover with fibonacci 
+To test prover we have to have compiled cairo program, and merged with input. 
+We can do it for Cairo Zero with: 
+```rust
+cargo make --makefile /home/mateuszpc/dev/http-prover/Makefile.toml prepareCairoZero
+```
+For Cairo:
+```rust
+cargo make --makefile /home/mateuszpc/dev/http-prover/Makefile.toml prepareCairo
+```
+
+
 # to run tests
 ```
 cargo test --package prove --test prove -- test_cairo0_fibonacci

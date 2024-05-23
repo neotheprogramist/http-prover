@@ -43,7 +43,7 @@ pub async fn spawn_prover() -> (JoinHandle<()>, ProverAccessKey, Url) {
 
 pub async fn read_file(path: PathBuf) -> Result<String, std::io::Error> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let file_path = manifest_dir.join("../../prover/resources").join(path);
+    let file_path = manifest_dir.join("../../").join(path);
     println!("Reading file: {:?}", file_path);
 
     let mut file = File::open(file_path).await?;

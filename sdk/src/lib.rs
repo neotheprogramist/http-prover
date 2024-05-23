@@ -59,7 +59,7 @@ mod tests {
         let prover_url = Url::parse("http://localhost:3000").unwrap();
         let sdk = ProverSDK::new(key, prover_url).await?;
 
-        let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
+        let data = load_cairo1(PathBuf::from("../examples/Cairo/prover_input.json")).await?;
         let proof = sdk.prove_cairo1(data).await;
 
         // If authentication fails, print out the error message
@@ -76,7 +76,7 @@ mod tests {
         let prover_url = Url::parse("http://localhost:3000").unwrap(); // Provide an invalid URL
         let sdk = ProverSDK::new(get_signing_key(), prover_url).await?;
 
-        let data = load_cairo0(PathBuf::from("../prover/resources/input_cairo0.json")).await?;
+        let data = load_cairo0(PathBuf::from("../examples/CairoZero/prover_input.json")).await?;
         let proof = sdk.prove_cairo0(data).await;
         // If authentication fails, print out the error message
         assert!(proof.is_ok(), "Failed to prove with invalid url");
@@ -94,7 +94,7 @@ mod tests {
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(get_signing_key(), prover_url).await?;
 
-        let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
+        let data = load_cairo1(PathBuf::from("../examples/Cairo/prover_input.json")).await?;
         let proof = sdk.prove_cairo1(data).await;
         // If authentication fails, print out the error message
         assert!(proof.is_ok(), "Failed to prove with invalid url");
@@ -132,7 +132,7 @@ mod tests {
         // Act: Attempt to authenticate with the valid private key and invalid URL for authentication
         let sdk = ProverSDK::new(get_signing_key(), prover_url).await?;
 
-        let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
+        let data = load_cairo1(PathBuf::from("../examples/Cairo/prover_input.json")).await?;
 
         let proof = sdk.prove_cairo0(data).await;
         // If authentication fails, print out the error message

@@ -26,7 +26,7 @@ mod tests {
     #[tokio::test]
     async fn test_root_with_input_json() {
         // Read input data from resources/input.json
-        let input_json = read_json_file("resources/input_cairo0.json")
+        let input_json = read_json_file("../examples/CairoZero/prover_input.json")
             .await
             .expect("Failed to read input JSON");
 

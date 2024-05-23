@@ -131,4 +131,3 @@ Handle errors using the provided error types:
         Ok(())
     }
 ```
-# testing prover with fibonacci
