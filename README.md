@@ -7,7 +7,7 @@ The Prover SDK is a Rust library for interacting with the Prover service. It pro
 Before using the prover key has to be authorized by the prover operator. To generate the key use:
 
 ```bash
-    cargo run --bin prover-keygen
+    cargo run --bin keygen
 ```
 
 It will output 2 keys.
