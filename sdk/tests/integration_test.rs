@@ -1,9 +1,9 @@
 mod common;
 mod tests {
+    use crate::common::spawn_prover;
     use sdk::{load_cairo0, load_cairo1, ProverAccessKey, ProverSDK, ProverSdkErrors};
     use std::path::PathBuf;
     use url::Url;
-    use crate::common::spawn_prover;
 
     // Tests the proving process using the Cairo0 protocol setup.
     #[tokio::test]
@@ -73,5 +73,25 @@ mod tests {
         sdk.register(new_key.0.verifying_key()).await?;
         handle.abort();
         Ok(())
+    }
+    #[tokio::test]
+    async fn test_wrong_key() -> Result<(), ProverSdkErrors> {
+        let (handle, _key, url) = spawn_prover().await;
+        let new_key = ProverAccessKey::generate();
+        let result = ProverSDK::new(new_key, url).await;
+
+        handle.abort(); // Make sure to abort the handle to clean up the spawned prover process.
+
+        // Check the result for the specific expected error type
+        match result {
+            Err(ProverSdkErrors::NonceRequestFailed(_)) => {
+                println!("Received expected NonceRequestFailed error");
+                Ok(())
+            }
+            _ => {
+                println!("Received unexpected error");
+                Err(ProverSdkErrors::NonceRequestFailed("".to_string()))
+            }
+        }
     }
 }
