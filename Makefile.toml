@@ -1,0 +1,59 @@
+[config]
+min_version = "0.32.0"
+
+[env]
+RUST_BACKTRACE = "1"
+CARGO_INCREMENTAL = "0"
+
+[tasks.setupCairo]
+description = "Installing dependencies and tools"
+script_runner = "sh"
+script = [
+    "echo Installing the Cairo program...",
+    "cargo install --git https://github.com/cartridge-gg/stone-prover.git --branch refactor/enhance-devex cairo1-compile",
+]
+category = "Setup"
+workspace = false
+
+[tasks.setupCairoZero]
+description = "Install dependencies or tools from a local path"
+script_runner = "sh"
+script = ["sh scripts/0-venv.sh"]
+
+workspace = false
+[tasks.compileCairoZero]
+description = "Compiling the CairoZero program"
+script = [
+    "echo Compiling the CairoZero program...",
+    "sh scripts/1-compile.sh",
+]
+[tasks.compileCairo]
+script_runner = "sh"
+script = [
+    "echo Compiling the Cairo program...",
+    "cairo1-compile compile examples/Cairo/fibonacci.cairo > resources/fibonacci_compiled.json",
+]
+workspace = false
+[tasks.mergeCairo]
+script_runner = "sh"
+script = [
+    "echo Merging the Cairo program...",
+    "cairo1-compile merge -o examples/Cairo/prover_input.json resources/fibonacci_compiled.json examples/CairoZero/input.json",
+    "rm resources/fibonacci_compiled.json",
+]
+
+workspace = false
+[tasks.mergeCairoZero]
+script_runner = "sh"
+script = [
+    "echo Merging the CairoZero program...",
+    "sh scripts/2-merge.sh",
+    "rm resources/fibonacci_compiled.json",
+    ]
+[tasks.prepareCairo]
+dependencies = ["setupCairo", "compileCairo", "mergeCairo"]
+workspace = false
+
+[tasks.prepareCairoZero]
+dependencies = ["setupCairoZero", "compileCairoZero","mergeCairoZero"]
+workspace = false
