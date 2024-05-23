@@ -1,7 +1,7 @@
 # `prove`
 
 ```sh
-cargo run --bin prove -- --key <your secret key for sdk> --cairo_version <1/0> your_input.json
+cargo run --bin prove -- --prover-key <your secret key for sdk> --cairo-version <1/0> your_input.json
 ```
 ## by the default cairo version is 1
 
@@ -30,12 +30,10 @@ For Cairo:
 ```rust
 cargo make --makefile /home/mateuszpc/dev/http-prover/Makefile.toml prepareCairo
 ```
-
-
 # to run tests
 ```
 cargo test --package prove --test prove -- test_cairo0_fibonacci
 ```
 ```
-cargo test --package prove --test prove -- test_cairo1_differ
+cargo test --package prove --test prove -- test_cairo1_fibonacci
 ``
