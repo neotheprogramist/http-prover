@@ -38,7 +38,7 @@ workspace = false
 script_runner = "sh"
 script = [
     "echo Merging the Cairo program...",
-    "cairo1-compile merge -o examples/Cairo/prover_input.json resources/fibonacci_compiled.json examples/CairoZero/input.json",
+    "cairo1-compile merge -o examples/Cairo/prover_input.json resources/fibonacci_compiled.json examples/Cairo/input.json",
     "rm resources/fibonacci_compiled.json",
 ]
 
