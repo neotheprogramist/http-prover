@@ -1,13 +1,13 @@
 use crate::common::{read_file, spawn_prover};
 use cairo_proof_parser::output::{extract_output, ExtractOutputResult};
-use prove::{prove, CliInput};
+use cairo_prove::{prove, CliInput};
 use serde_json::Value;
 use std::path::PathBuf;
 
 mod common;
 
 #[tokio::test]
-async fn test_cairo1_fibonacci() -> Result<(), prove::ProveError> {
+async fn test_cairo1_fibonacci() -> Result<(), cairo_prove::ProveError> {
     let (handle, key, url) = spawn_prover().await;
 
     let args = CliInput {
@@ -23,7 +23,7 @@ async fn test_cairo1_fibonacci() -> Result<(), prove::ProveError> {
     Ok(())
 }
 #[tokio::test]
-async fn test_cairo0_fibonacci() -> Result<(), prove::ProveError> {
+async fn test_cairo0_fibonacci() -> Result<(), cairo_prove::ProveError> {
     let (handle, key, url) = spawn_prover().await;
 
     let args = CliInput {

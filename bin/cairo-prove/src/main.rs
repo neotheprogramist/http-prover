@@ -1,5 +1,5 @@
 use clap::Parser;
-use prove::{prove, CliInput, ProveError};
+use cairo_prove::{prove, CliInput, ProveError};
 use tokio::io::{self, AsyncReadExt};
 
 #[tokio::main]

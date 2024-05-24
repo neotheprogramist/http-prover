@@ -1,5 +1,5 @@
 [package]
-name = "prove"
+name = "cairo-prove"
 version.workspace = true
 edition.workspace = true
 

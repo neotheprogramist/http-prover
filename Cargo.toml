@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
+    "bin/cairo-prove",
     "bin/keygen",
-    "bin/prove",
     "bin/register",
     "crates/common",
     "crates/podman",
