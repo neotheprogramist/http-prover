@@ -1,7 +1,6 @@
 use clap::Parser;
 use sdk::{Cairo0ProverInput, Cairo1ProverInput, ProverAccessKey, ProverSDK};
 use serde::{Deserialize, Serialize};
-use serde_json;
 use thiserror::Error;
 use url::Url;
 
