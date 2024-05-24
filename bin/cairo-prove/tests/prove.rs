@@ -11,9 +11,9 @@ async fn test_cairo1_fibonacci() -> Result<(), cairo_prove::ProveError> {
     let (handle, key, url) = spawn_prover().await;
 
     let args = CliInput {
-        prover_key: key.signing_key_as_hex_string(),
+        key: key.signing_key_as_hex_string(),
         cairo_version: 1,
-        prover_url: url,
+        url: url,
     };
 
     let prover_input = read_file(PathBuf::from("examples/Cairo/prover_input.json")).await?;
@@ -27,9 +27,9 @@ async fn test_cairo0_fibonacci() -> Result<(), cairo_prove::ProveError> {
     let (handle, key, url) = spawn_prover().await;
 
     let args = CliInput {
-        prover_key: key.signing_key_as_hex_string(),
+        key: key.signing_key_as_hex_string(),
         cairo_version: 0,
-        prover_url: url,
+        url: url,
     };
     let prover_input = read_file(PathBuf::from("examples/CairoZero/prover_input.json")).await?;
     let program_input: Value = serde_json::from_str(&prover_input)?;
