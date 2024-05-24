@@ -32,7 +32,7 @@ pub struct CliInput {
     #[arg(short, long, default_value_t = 1)]
     pub cairo_version: usize, // 0 or 1,
 
-    #[arg(short, long, default_value = "http://localhost:3000")]
+    #[arg(short, long, default_value = "http://localhost:3001")]
     pub prover_url: Url,
 }
 
