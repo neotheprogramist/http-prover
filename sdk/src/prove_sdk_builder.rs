@@ -216,17 +216,26 @@ impl ProverSDKBuilder {
 
         let prover = self
             .base_url
-            .join("/prove")
+            .join("")
             .map_err(ProverSdkErrors::UrlParseError)?;
+        let cookie_jar = Arc::new(Jar::default());
+        let secure_attribute = if prover.scheme() == "https" {
+            "Secure; "
+        } else {
+            ""
+        };
 
-        let jar = Jar::default();
-        jar.add_cookie_str(
-            &format!("jwt_token={}; HttpOnly; Secure; Path=/", jwt_token),
+        cookie_jar.add_cookie_str(
+            &format!(
+                "jwt_token={}; HttpOnly; {}  SameSite=None; Path=/",
+                jwt_token, secure_attribute
+            ),
             &prover,
         );
 
         let client = reqwest::Client::builder()
-            .cookie_provider(Arc::new(jar))
+            .cookie_store(true)
+            .cookie_provider(cookie_jar)
             .build()
             .map_err(|e| {
                 ProverSdkErrors::ReqwestBuildError(format!("Failed to build reqwest client: {}", e))

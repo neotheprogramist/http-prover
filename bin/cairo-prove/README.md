@@ -1,7 +1,7 @@
 # `prove`
 
 ```sh
-cargo run --bin prove -- --prover-key <your secret key for sdk> --cairo-version <1/0> your_input.json
+cargo run --bin cairo-prove -- --key <your secret key for sdk> --cairo-version <1/0> --url <url for prover> your_input.json > output.json
 ```
 ## by the default cairo version is 1
 

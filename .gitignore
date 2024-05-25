@@ -22,3 +22,6 @@
 /resources
 /.cargo
 .venv
+output.json
+examples/Cairo/prover_input.json
+examples/CairoZero/prover_input.json

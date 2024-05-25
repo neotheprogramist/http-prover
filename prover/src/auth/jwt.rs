@@ -6,6 +6,7 @@ use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation}
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
+use tracing::warn;
 
 pub fn encode_jwt(sub: &str, exp: usize, keys: Keys) -> Result<String, ProveError> {
     let claims = Claims {
@@ -25,13 +26,13 @@ where
     type Rejection = ProveError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let store = AppState::from_ref(_state);
-        // Extract the 'Cookie' header
-        let header_value = parts
-            .headers
-            .get(COOKIE)
-            .ok_or(ProveError::Auth(AuthError::MissingAuthorizationHeader))?;
+        let store: AppState = AppState::from_ref(_state);
 
+        // Extract the 'Cookie' header
+        let header_value = parts.headers.get(COOKIE).ok_or_else(|| {
+            warn!("Missing 'Cookie' header in the request");
+            ProveError::Auth(AuthError::MissingAuthorizationHeader)
+        })?;
         // Convert the header value to a string
         let cookie_str = header_value
             .to_str()

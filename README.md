@@ -21,7 +21,7 @@ First parse a private key corresponding to an authorized public key.
 
 ```rust
     ProverAccessKey::from_hex_string(
-        "f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740",
+        "0xf91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740",
     )
     .unwrap()
 
@@ -66,7 +66,7 @@ Tests from the sdk lib.rs file should be run separately.
 Run command below to generate keys. Pass the public key to operator, after he includes it to the prover you will be able to use sdk.
 
 ```bash
-cargo run --bin prover-keygen
+cargo run --bin keygen
 ```
 
 ## Usage

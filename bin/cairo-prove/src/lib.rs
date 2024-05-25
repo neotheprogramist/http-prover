@@ -1,7 +1,6 @@
 use clap::Parser;
 use sdk::{Cairo0ProverInput, Cairo1ProverInput, ProverAccessKey, ProverSDK};
 use serde::{Deserialize, Serialize};
-use serde_json;
 use thiserror::Error;
 use url::Url;
 
@@ -27,19 +26,19 @@ pub enum ProveError {
 #[clap(author, version, about, long_about = None)]
 pub struct CliInput {
     #[arg(short = 'k', long)]
-    pub prover_key: String,
+    pub key: String,
 
     #[arg(short, long, default_value_t = 1)]
     pub cairo_version: usize, // 0 or 1,
 
-    #[arg(short, long, default_value = "http://localhost:3000")]
-    pub prover_url: Url,
+    #[arg(short, long)]
+    pub url: Url,
 }
 
 pub async fn prove(args: CliInput, input: String) -> Result<String, ProveError> {
     let secret_key =
-        ProverAccessKey::from_hex_string(&args.prover_key).map_err(ProveError::DecodeKey)?;
-    let sdk = ProverSDK::new(secret_key, args.prover_url)
+        ProverAccessKey::from_hex_string(&args.key).map_err(ProveError::DecodeKey)?;
+    let sdk = ProverSDK::new(secret_key, args.url)
         .await
         .map_err(ProveError::Initialize)?;
 
