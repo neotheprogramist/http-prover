@@ -10,7 +10,7 @@ description = "Installing dependencies and tools"
 script_runner = "sh"
 script = [
     "echo Installing the Cairo program...",
-    "cargo install --git https://github.com/cartridge-gg/stone-prover.git --branch refactor/enhance-devex cairo1-compile",
+    "cargo install --git https://github.com/cartridge-gg/stone-prover.git --branch docker/both-cairo-versions cairo1-compile",
 ]
 category = "Setup"
 
@@ -61,4 +61,4 @@ workspace = false
 
 [tasks.prepareCairoZero]
 dependencies = ["setupCairoZero", "compileCairoZero","mergeCairoZero"]
-workspace =false
+workspace = false

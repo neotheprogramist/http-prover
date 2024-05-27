@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use prover::server::start;
 use prover::Args;
-use sdk::ProverAccessKey;
+use prover_sdk::ProverAccessKey;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;

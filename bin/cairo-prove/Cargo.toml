@@ -6,8 +6,8 @@ edition.workspace = true
 [dependencies]
 clap.workspace = true
 ed25519-dalek.workspace = true
-sdk.workspace = true
 prefix-hex.workspace = true
+prover-sdk.workspace = true
 tokio.workspace = true
 url.workspace = true
 serde.workspace = true

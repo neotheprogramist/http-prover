@@ -1,5 +1,5 @@
 use clap::Parser;
-use sdk::{Cairo0ProverInput, Cairo1ProverInput, ProverAccessKey, ProverSDK};
+use prover_sdk::{Cairo0ProverInput, Cairo1ProverInput, ProverAccessKey, ProverSDK};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use url::Url;
@@ -13,13 +13,13 @@ pub enum ProveError {
     DecodeKey(prefix_hex::Error),
 
     #[error("Failed to initialize or authenticate prover SDK")]
-    Initialize(sdk::ProverSdkErrors),
+    Initialize(prover_sdk::ProverSdkErrors),
 
     #[error("Failed to parse input: {0}")]
     ParseInput(#[from] serde_json::Error),
 
     #[error("Failed to prove: {0}")]
-    Prove(sdk::ProverSdkErrors),
+    Prove(prover_sdk::ProverSdkErrors),
 }
 
 #[derive(Parser, Debug, Serialize, Deserialize)]
@@ -36,8 +36,7 @@ pub struct CliInput {
 }
 
 pub async fn prove(args: CliInput, input: String) -> Result<String, ProveError> {
-    let secret_key =
-        ProverAccessKey::from_hex_string(&args.key).map_err(ProveError::DecodeKey)?;
+    let secret_key = ProverAccessKey::from_hex_string(&args.key).map_err(ProveError::DecodeKey)?;
     let sdk = ProverSDK::new(secret_key, args.url)
         .await
         .map_err(ProveError::Initialize)?;
