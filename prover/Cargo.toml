@@ -27,3 +27,7 @@ tower-http.workspace = true
 tracing-subscriber.workspace = true
 tracing.workspace = true
 utils.workspace = true
+rustls ="0.23.8"
+instant-acme = "0.4.3"
+rcgen="0.13.1"
+rustls-acme = "*"
