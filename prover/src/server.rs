@@ -13,7 +13,7 @@ use std::{
 };
 use std::{net::SocketAddr, time::Duration};
 use tokio::net::TcpListener;
-use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
+use tower_http::{limit::RequestBodyLimitLayer, timeout::TimeoutLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utils::shutdown::shutdown_signal;
 
@@ -63,6 +63,7 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         .nest("/", auth::auth(&state))
         .nest("/prove", prove::router(&state))
         .layer((
+            RequestBodyLimitLayer::new(100 * 1024 * 1024),
             TraceLayer::new_for_http(),
             TimeoutLayer::new(Duration::from_secs(300)),
         ));
