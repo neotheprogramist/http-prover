@@ -6,6 +6,7 @@
 FILE1="resources/fibonacci_compiled.json"
 FILE2="examples/CairoZero/input.json"
 OUTPUT="examples/CairoZero/prover_input.json"
+LAYOUT='recursive'
 
 # Call the Python script to combine the JSON files
-python scripts/combine_json.py "$FILE1" "$FILE2" "$OUTPUT"
+python scripts/combine_json.py "$FILE1" "$FILE2" "$LAYOUT" "$OUTPUT"

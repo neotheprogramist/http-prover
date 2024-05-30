@@ -49,7 +49,7 @@ To run the sdk first make sure prover/authorized_keys.json contains your public_
 Run the following command in your terminal:
 
 ```bash
- cargo run -p prover --jwt-secret-key <ENV_VAR_JWT_SECRET_KEY> --message-expiration-time <MESSAGE_EXPIRATION_TIME> --session-expiration-time <SESSION_EXPIRATION_TIME> --private-key <PRIVATE_KEY> --authorized-keys <AUTHORIZED_KEY>,<ANOTHER_KEY>
+ cargo run -p prover -- --jwt-secret-key <ENV_VAR_JWT_SECRET_KEY> --message-expiration-time <MESSAGE_EXPIRATION_TIME> --session-expiration-time <SESSION_EXPIRATION_TIME> --authorized-keys <AUTHORIZED_KEY>,<ANOTHER_KEY>
 ```
 
 Alternatively use the flag `--authorized-keys-path authorized_keys.json` instead of `--authorized-keys` to load keys from a json file. It needs to have the format below
