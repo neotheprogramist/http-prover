@@ -6,7 +6,7 @@ use crate::ProverInput;
 pub struct Cairo0ProverInput {
     pub program: CompiledProgram,
     pub program_input: serde_json::Value,
-    pub layout: serde_json::Value,
+    pub layout: String,
 }
 
 impl ProverInput for Cairo0ProverInput {
@@ -286,7 +286,7 @@ mod tests {
         let prove_input = Cairo0ProverInput {
             program: compiled_program,
             program_input: serde_json::to_value(&input).unwrap(),
-            layout: serde_json::Value::String("recursive".to_string()),
+            layout: "recursive".to_string(),
         };
         let serialized = &serde_json::to_string(&prove_input).unwrap();
         let deserialized: Cairo0ProverInput = serde_json::from_str(&serialized).unwrap();
