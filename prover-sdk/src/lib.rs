@@ -25,8 +25,8 @@ mod tests {
 
     fn get_signing_key() -> ProverAccessKey {
         ProverAccessKey::from_hex_string(
-            "0xc8664097c1bf5b771b8aef6f6244ec86a0f5a4012f6a6ff5e719ce7a5c6d9cb5",
-            // Corresponding to 0x72521b7b229a181e741a831d2d59f7f90fbb1002ad25fa6bbd48b8a71dd511f3 public key.
+            "0x1372ef5a200875fc0663f5e7819bb9ecc0ca99783306c19ab9123214c74ca251",
+            // Corresponding to 0xd16b71c90dbf897e5964d2f267d04664b3c035036559d712994739ea6cf2fd9f public key.
         )
         .unwrap()
     }
@@ -37,7 +37,7 @@ mod tests {
 
         let args = Args {
             host: "0.0.0.0".to_string(),
-            port: 3000,
+            port: 3043,
             jwt_secret_key: "placeholder".to_string(),
             message_expiration_time: 60,
             session_expiration_time: 3600,
@@ -56,7 +56,7 @@ mod tests {
     async fn test_prover_cairo1_spawn_prover() -> Result<(), ProverSdkErrors> {
         let (_handle, key) = spawn_prover().await;
 
-        let prover_url = Url::parse("http://localhost:3000").unwrap();
+        let prover_url = Url::parse("http://localhost:3043").unwrap();
         let sdk = ProverSDK::new(key, prover_url).await?;
 
         let data = load_cairo1(PathBuf::from("../examples/Cairo/prover_input.json")).await?;

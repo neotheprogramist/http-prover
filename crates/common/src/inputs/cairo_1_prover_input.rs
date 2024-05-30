@@ -6,6 +6,7 @@ use crate::ProverInput;
 pub struct Cairo1ProverInput {
     pub program: Cairo1CompiledProgram,
     pub program_input: serde_json::Value,
+    pub layout: serde_json::Value,
 }
 impl ProverInput for Cairo1ProverInput {
     fn serialize(self) -> serde_json::Value {

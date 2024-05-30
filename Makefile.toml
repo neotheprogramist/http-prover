@@ -23,16 +23,14 @@ script = ["sh scripts/0-venv.sh"]
 
 [tasks.compileCairoZero]
 description = "Compiling the CairoZero program"
-script = [
-    "echo Compiling the CairoZero program...",
-    "sh scripts/1-compile.sh",
-]
+script = ["echo Compiling the CairoZero program...", "sh scripts/1-compile.sh"]
 
 
 [tasks.compileCairo]
 script_runner = "sh"
 script = [
     "echo Compiling the Cairo program...",
+    "mkdir -p resources",
     "cairo1-compile compile examples/Cairo/fibonacci.cairo > resources/fibonacci_compiled.json",
 ]
 
@@ -52,7 +50,7 @@ script = [
     "echo Merging the CairoZero program...",
     "sh scripts/2-merge.sh",
     "rm resources/fibonacci_compiled.json",
-    ]
+]
 
 [tasks.prepareCairo]
 dependencies = ["setupCairo", "compileCairo", "mergeCairo"]
@@ -60,5 +58,5 @@ workspace = false
 
 
 [tasks.prepareCairoZero]
-dependencies = ["setupCairoZero", "compileCairoZero","mergeCairoZero"]
+dependencies = ["setupCairoZero", "compileCairoZero", "mergeCairoZero"]
 workspace = false
