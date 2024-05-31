@@ -29,26 +29,8 @@ pub struct AppState {
     pub authorizer: Authorizer,
 }
 
-async fn create_account(client: &Client, new_account_url: &str, jose_object: &str) -> Result<Value, reqwest::Error> {
-    let res = client.post(new_account_url)
-        .header(header::ACCEPT, "application/jose+json")
-        .body(body).
-        send().await?;
-        // .header(header::CONTENT_TYPE, "application/jose+json")
-    res.json().await
-}
-
-
 pub async fn start(args: Args) -> Result<(), ServerError> {
-    let client = Client::new();
-    let directory_url = "https://acme-v02.api.letsencrypt.org/directory";
-    let res = client.get(directory_url).send().await.unwrap();
-    let directory: Value = res.json().await.unwrap();
-    let new_account_url = directory["newAccount"].as_str().unwrap();
-    let new_account = create_account(&client, new_account_url,).await.unwrap();
-    println!("{:?}", new_account);
-
-    // Enable tracing.
+       // Enable tracing.
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()

@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod prove;
+pub mod cert;
 pub mod server;
 use std::path::PathBuf;
 
