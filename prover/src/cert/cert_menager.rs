@@ -1,7 +1,8 @@
-use reqwest::{header, Client};
+use josekit::{jwk::alg::ec::EcKeyPair, jwt::JwtPayload};
+use reqwest::{get, header, Client, Response};
 use serde_json::Value;
 
-use super::types::DirectoryUrls;
+use super::{create_jws::create_jws, types::DirectoryUrls};
 const JOSE_JSON: &str = "application/jose+json";
 const REPLAY_NONCE: &str = "replay-nonce";
 
@@ -33,7 +34,80 @@ pub async fn new_nonce(client: &Client, url_value: String) -> String {
     nonce
 }
 
-pub async fn new_account(client: &Client, url_value: String, body: String) -> reqwest::Response {
+pub async fn new_account(
+    client: &Client,
+    urls: DirectoryUrls,
+    contact_mail: String,
+    ec_key_pair: EcKeyPair,
+) -> reqwest::Response {
+    // "termsOfServiceAgreed": true,
+    // "contact": ["mailto:mail@example.com"]
+    let mut payload = JwtPayload::new();
+    let nonce = new_nonce(&client, urls.clone().new_nonce).await;
+    let _ = payload.set_claim("termsOfServiceAgreed", Some(serde_json::Value::Bool(true)));
+    let _ = payload.set_claim(
+        "contact",
+        Some(serde_json::Value::Array(vec![serde_json::Value::String(
+            format!("mailto:{}",contact_mail),
+        )])),
+    );
+    let body = create_jws(nonce, payload, urls.new_account.clone(), ec_key_pair, None).unwrap();
+    post(client, urls.new_account, body).await
+}
+
+pub async fn submit_order(client: &Client, urls: DirectoryUrls,identifiers: Vec<String>,ec_key_pair: EcKeyPair,kid:String) -> reqwest::Response {
+    // "identifiers": [
+    //      { "type": "dns", "value": "www.example.org" },
+    //      { "type": "dns", "value": "example.org" }
+    //    ],
+    let mut payload = JwtPayload::new();
+    let nonce = new_nonce(&client, urls.clone().new_nonce).await;
+    let _ = payload.set_claim("identifiers", Some(serde_json::Value::Array(identifiers.iter().map(|x| serde_json::json!({
+        "type": "dns",
+        "value": x
+    })).collect::<Vec<serde_json::Value>>())));
+    let body = create_jws(nonce, payload, urls.new_order.clone(), ec_key_pair, Some(kid)).unwrap();
+    post(client, urls.new_order, body).await
+}
+
+pub async fn fetch_authorizations(response: Response) -> Vec<String> {
+    let order = response.json::<Value>().await.unwrap();
+    let authorizations: Vec<String> = order["authorizations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|authz| authz.as_str().unwrap().to_string())
+        .collect();
+    authorizations
+}
+pub async fn fetch_challanges(authorizations: Vec<String>) -> Vec<String> {
+    let client = Client::new();
+    let mut challanges: Vec<String> = Vec::new();
+    for authz in authorizations {
+        let response = client.get(authz).send().await.unwrap();
+        let authz = response.json::<Value>().await.unwrap();
+        let challange = authz["challenges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|challange| challange["type"] == "http-01")
+            .unwrap();
+        challanges.push(challange["url"].as_str().unwrap().to_string());
+    }
+    challanges
+}
+pub async fn get_challanges_tokens(challanges: Vec<String>) -> Vec<String> {
+    let client = Client::new();
+    let mut details: Vec<String> = Vec::new();
+    for challange in challanges {
+        let response = client.get(challange).send().await.unwrap();
+        let detail = response.json::<Value>().await.unwrap();
+        details.push(detail["token"].as_str().unwrap().to_string());
+    }
+    details
+}
+
+pub async fn post(client: &Client, url_value: String, body: String) -> reqwest::Response {
     let response = client
         .post(url_value)
         .header(header::CONTENT_TYPE, JOSE_JSON)
@@ -42,17 +116,6 @@ pub async fn new_account(client: &Client, url_value: String, body: String) -> re
         .await
         .unwrap();
     response
-}
-pub async fn submit_order(client: &Client, url_value: String, body: String) -> Value {
-    let response = client
-        .post(url_value)
-        .header(header::CONTENT_TYPE, JOSE_JSON)
-        .body(body)
-        .send()
-        .await
-        .unwrap();
-    let order: Value = response.json().await.unwrap();
-    order
 }
 pub async fn challange_http01() {
 
@@ -95,20 +158,9 @@ mod tests {
     #[tokio::test]
     async fn test_new_account() -> Result<(), Box<dyn std::error::Error>> {
         let ec_key_pair = EcKeyPair::generate(EcCurve::P256)?;
-        let mut _payload = JwtPayload::new();
         let client = Client::new();
         let urls = new_directory().await;
-        let nonce = new_nonce(&client, urls.new_nonce).await;
-        let _ = _payload.set_claim("termsOfServiceAgreed", Some(serde_json::Value::Bool(true)));
-        _ = _payload.set_claim(
-            "contact",
-            Some(serde_json::Value::Array(vec![serde_json::Value::String(
-                "mailto:cert-admin@gmail.com".to_string(),
-            )])),
-        );
-
-        let jws = create_jws(nonce, _payload, urls.new_account.clone(), ec_key_pair,None)?;
-        let response = new_account(&client, urls.new_account, jws).await;
+        let response = new_account(&client,urls,"mateo@gmail.com".to_string(),ec_key_pair).await;
         let mut accountlink: String = "".to_string();
         if response.status().is_success() {
             // Attempt to extract the "location" header
@@ -117,30 +169,10 @@ mod tests {
             } else {
                 println!("Account URL not found")
             }
-
         } else {
             println!("Account creation failed: {:?}", response.text().await?);
         }
         println!("{:?}", accountlink);
-        Ok(())
-    }
-    #[tokio::test]
-    async fn test_submit_order() -> Result<(), Box<dyn std::error::Error>> {
-        let ec_key_pair = EcKeyPair::generate(EcCurve::P256)?;
-        let mut _payload = JwtPayload::new();
-        let client = Client::new();
-        let urls = new_directory().await;
-        let nonce = new_nonce(&client, urls.new_nonce).await;
-        let _ = _payload.set_claim(
-            "identifiers",
-            Some(serde_json::Value::Array(vec![serde_json::json!({
-                "type": "dns",
-                "value": "blabla.visoft.dev"
-            })])),
-        );
-        let jws = create_jws(nonce, _payload, urls.new_order.clone(), ec_key_pair,None)?;
-        let response = submit_order(&client, urls.new_order, jws).await;
-        println!("{:?}", response.to_string());
         Ok(())
     }
 }

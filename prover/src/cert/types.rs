@@ -4,7 +4,7 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct DirectoryUrls {
+pub struct DirectoryUrls {
     pub(crate) new_nonce: String,
     pub(crate) new_account: String,
     pub(crate) new_order: String,
