@@ -106,6 +106,14 @@ pub async fn get_challanges_tokens(challanges: Vec<String>) -> Vec<String> {
     }
     details
 }
+pub async fn respond_to_challange(challange_url : String, ec_key_pair: EcKeyPair,kid: String) -> Response{
+    let client = Client::new();
+    let payload = JwtPayload::new();
+    let nonce = new_nonce(&client, challange_url.clone()).await;
+    let body = create_jws(nonce, payload, challange_url.clone(), ec_key_pair, Some(kid)).unwrap();
+    post(&client, challange_url, body).await
+
+}
 
 pub async fn post(client: &Client, url_value: String, body: String) -> reqwest::Response {
     let response = client

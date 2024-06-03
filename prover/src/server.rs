@@ -2,7 +2,7 @@ use crate::{
     auth::{
         self,
         authorizer::{Authorizer, FileAuthorizer},
-    }, cert::{cert_menager::{fetch_authorizations, fetch_challanges, get_challanges_tokens, new_directory, new_nonce, submit_order}, create_jws::create_jws}, prove, Args
+    }, cert::{cert_menager::{fetch_authorizations, fetch_challanges, get_challanges_tokens, new_directory, new_nonce, respond_to_challange, submit_order}, create_jws::create_jws}, prove, Args
 };
 use axum::{extract::Path, response::IntoResponse, Extension, Router};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
@@ -53,10 +53,9 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
     let order = submit_order(&client, urls,vec!["prover.visoft.dev".to_string()],ec_key_pair.clone(),account_url.to_string()).await;
     let authorizations = fetch_authorizations(order).await;
     let challanges = fetch_challanges(authorizations).await;
-    let tokens = get_challanges_tokens(challanges).await;
-    println!("{:?}",tokens);
-
-
+    let tokens = get_challanges_tokens(challanges.clone()).await;
+    let chall_responese = respond_to_challange(challanges[0].clone(), ec_key_pair.clone(), account_url.to_string()).await;
+    println!("{:?}",chall_responese);
     let public_key = ec_key_pair.to_der_public_key().clone();
     let digest = hash(MessageDigest::sha256(), &public_key).unwrap();
     let thumbprint = URL_SAFE_NO_PAD.encode(digest);
