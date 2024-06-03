@@ -65,7 +65,7 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         .layer((
             RequestBodyLimitLayer::new(100 * 1024 * 1024),
             TraceLayer::new_for_http(),
-            TimeoutLayer::new(Duration::from_secs(300)),
+            TimeoutLayer::new(Duration::from_secs(60 * 60)),
         ));
 
     let address: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
