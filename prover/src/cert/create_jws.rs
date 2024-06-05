@@ -1,5 +1,6 @@
 use crate::cert::types::base64;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use josekit::{
     jwk::alg::ec::EcKeyPair,
     jws::{JwsHeader, ES256},
@@ -37,7 +38,7 @@ pub fn create_jws(
     let signer = ES256.signer_from_pem(ec_key_pair.to_pem_private_key())?;
     //Create and sign the JWT
     let signature = signer.sign(format!("{}.{}", &encoded_header, &encoded_payload).as_bytes())?;
-    let encoded_signature = URL_SAFE_NO_PAD.encode(signature);
+    let encoded_signature = BASE64_URL_SAFE_NO_PAD.encode(signature);
     Ok(json!({
         "protected": encoded_header,
         "payload": encoded_payload,

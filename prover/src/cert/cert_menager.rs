@@ -1,6 +1,7 @@
+use axum::http::response;
 use josekit::{jwk::alg::ec::EcKeyPair, jwt::JwtPayload};
 use reqwest::{get, header, Client, Response};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use super::{create_jws::create_jws, types::DirectoryUrls};
 const JOSE_JSON: &str = "application/jose+json";
@@ -48,25 +49,48 @@ pub async fn new_account(
     let _ = payload.set_claim(
         "contact",
         Some(serde_json::Value::Array(vec![serde_json::Value::String(
-            format!("mailto:{}",contact_mail),
+            format!("mailto:{}", contact_mail),
         )])),
     );
     let body = create_jws(nonce, payload, urls.new_account.clone(), ec_key_pair, None).unwrap();
     post(client, urls.new_account, body).await
 }
 
-pub async fn submit_order(client: &Client, urls: DirectoryUrls,identifiers: Vec<String>,ec_key_pair: EcKeyPair,kid:String) -> reqwest::Response {
+pub async fn submit_order(
+    client: &Client,
+    urls: DirectoryUrls,
+    identifiers: Vec<String>,
+    ec_key_pair: EcKeyPair,
+    kid: String,
+) -> reqwest::Response {
     // "identifiers": [
     //      { "type": "dns", "value": "www.example.org" },
     //      { "type": "dns", "value": "example.org" }
     //    ],
     let mut payload = JwtPayload::new();
     let nonce = new_nonce(&client, urls.clone().new_nonce).await;
-    let _ = payload.set_claim("identifiers", Some(serde_json::Value::Array(identifiers.iter().map(|x| serde_json::json!({
-        "type": "dns",
-        "value": x
-    })).collect::<Vec<serde_json::Value>>())));
-    let body = create_jws(nonce, payload, urls.new_order.clone(), ec_key_pair, Some(kid)).unwrap();
+    let _ = payload.set_claim(
+        "identifiers",
+        Some(serde_json::Value::Array(
+            identifiers
+                .iter()
+                .map(|x| {
+                    serde_json::json!({
+                        "type": "dns",
+                        "value": x
+                    })
+                })
+                .collect::<Vec<serde_json::Value>>(),
+        )),
+    );
+    let body = create_jws(
+        nonce,
+        payload,
+        urls.new_order.clone(),
+        ec_key_pair,
+        Some(kid),
+    )
+    .unwrap();
     post(client, urls.new_order, body).await
 }
 
@@ -90,7 +114,7 @@ pub async fn fetch_challanges(authorizations: Vec<String>) -> Vec<String> {
             .as_array()
             .unwrap()
             .iter()
-            .find(|challange| challange["type"] == "http-01")
+            .find(|challange| challange["type"] == "dns-01")
             .unwrap();
         challanges.push(challange["url"].as_str().unwrap().to_string());
     }
@@ -106,13 +130,23 @@ pub async fn get_challanges_tokens(challanges: Vec<String>) -> Vec<String> {
     }
     details
 }
-pub async fn respond_to_challange(challange_url : String, ec_key_pair: EcKeyPair,kid: String) -> Response{
+pub async fn respond_to_challange(
+    challange_url: String,
+    ec_key_pair: EcKeyPair,
+    kid: String,
+) -> Response {
     let client = Client::new();
     let payload = JwtPayload::new();
     let nonce = new_nonce(&client, challange_url.clone()).await;
-    let body = create_jws(nonce, payload, challange_url.clone(), ec_key_pair, Some(kid)).unwrap();
+    let body = create_jws(
+        nonce,
+        payload,
+        challange_url.clone(),
+        ec_key_pair,
+        Some(kid),
+    )
+    .unwrap();
     post(&client, challange_url, body).await
-
 }
 
 pub async fn post(client: &Client, url_value: String, body: String) -> reqwest::Response {
@@ -125,9 +159,59 @@ pub async fn post(client: &Client, url_value: String, body: String) -> reqwest::
         .unwrap();
     response
 }
-pub async fn challange_http01() {
 
-    //TODO
+pub async fn post_dns_record(body: String) -> Response{
+    let api_token = "bjlYz_K2uEn278Bcp2GY8hVEgokT-GZsOnFH2otq";
+    let zone_id = "c99a975281977d4a887921558d4fd76d";
+    let url = format!(
+        "https://api.cloudflare.com/client/v4/zones/{}/dns_records",
+        zone_id
+    );
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(&url)
+        .bearer_auth(api_token)
+        .body(format!(
+            r#"{{
+            "type": "TXT",
+            "name": "_acme-challenge.mateuszchudy.lat",
+            "content": "{}",
+            "ttl": 120
+        }}"#,
+            body
+        ))
+        .send()
+        .await
+        .unwrap();
+    response
+}
+pub async fn check_dns_record() {
+    let client = reqwest::Client::new();
+    let api_token = "bjlYz_K2uEn278Bcp2GY8hVEgokT-GZsOnFH2otq";
+    let zone_id = "c99a975281977d4a887921558d4fd76d";
+    let url = format!(
+        "https://api.cloudflare.com/client/v4/zones/{}/dns_records",
+        zone_id
+    );
+    let response = client.get(&url)
+        .bearer_auth(api_token)
+        .send()
+        .await.unwrap();
+
+    let response_body = response.text().await.unwrap();
+
+    // Optionally, you can print the entire response body
+    println!("Response: {}", response_body);
+
+    // Parse the JSON and inspect the TXT records
+    let json: Value = serde_json::from_str(&response_body).unwrap();
+    if let Some(records) = json["result"].as_array() {
+        for record in records {
+            println!("Record found: {} -> {}", record["name"], record["content"]);
+        }
+    }
+
 }
 #[cfg(test)]
 mod tests {
@@ -168,7 +252,7 @@ mod tests {
         let ec_key_pair = EcKeyPair::generate(EcCurve::P256)?;
         let client = Client::new();
         let urls = new_directory().await;
-        let response = new_account(&client,urls,"mateo@gmail.com".to_string(),ec_key_pair).await;
+        let response = new_account(&client, urls, "mateo@gmail.com".to_string(), ec_key_pair).await;
         let mut accountlink: String = "".to_string();
         if response.status().is_success() {
             // Attempt to extract the "location" header
@@ -181,6 +265,12 @@ mod tests {
             println!("Account creation failed: {:?}", response.text().await?);
         }
         println!("{:?}", accountlink);
+        Ok(())
+    }
+    #[tokio::test]
+    async fn test_post_dns_record() -> Result<(), Box<dyn std::error::Error>> {
+        post_dns_record("token".to_string()).await;
+        check_dns_record().await;
         Ok(())
     }
 }
