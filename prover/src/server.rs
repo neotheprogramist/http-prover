@@ -28,6 +28,7 @@ pub struct AppState {
 }
 
 pub async fn start(args: Args) -> Result<(), ServerError> {
+    // Enable tracing.
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -71,6 +72,7 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
 
     // Create a `TcpListener` using tokio.
     let listener = TcpListener::bind(address).await?;
+
     // Run the server with graceful shutdown
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())

@@ -221,6 +221,7 @@ pub async fn order_finalization(
     .unwrap();
     post(&client, finalization_url, body).await
 }
+
 pub fn get_key_authorization(token: String, ec_key_pair: EcKeyPair) -> String {
     let thumbprint = get_thumbprint(ec_key_pair);
     // Construct key authorization using the token and the thumbprint
@@ -247,7 +248,7 @@ pub fn generate_csr(domain: Vec<&str>) -> Result<String, openssl::error::ErrorSt
     let mut req_builder = X509Req::builder()?;
     req_builder.set_subject_name(&name)?;
     req_builder.set_pubkey(&pkey)?;
-    // Add the SAN extension (Subject Alternative Name
+    // Add the SAN extension (Subject Alternative Name)
     let context = req_builder.x509v3_context(None);
     let san_extension = san_builder.build(&context)?;
     let mut stack = Stack::new()?;

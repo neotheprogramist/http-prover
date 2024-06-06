@@ -108,7 +108,7 @@ async fn main() -> Result<(), ServerError> {
                 let certificate = client.get(certificate_url).send().await.unwrap();
                 let certificate_body = certificate.text().await.unwrap();
                 // Define the path to save the certificate
-                let path = "../certs/your_certificate.pem"; // Adjust the path as necessary
+                let path = "certificate.pem"; // Adjust the path as necessary
                 // Write to a file
                 let mut file = File::create(path)?;
                 file.write_all(certificate_body.as_bytes())?;
