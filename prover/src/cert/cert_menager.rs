@@ -1,25 +1,20 @@
 use std::collections::BTreeMap;
 
-use axum::http::response;
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use base64::Engine;
-use josekit::jwk::alg::ec;
 use josekit::{jwk::alg::ec::EcKeyPair, jwt::JwtPayload};
 use openssl::hash::hash;
-use openssl::hash::{self, MessageDigest};
+use openssl::hash::MessageDigest;
 use openssl::pkey::PKey;
-use openssl::rsa::Rsa;
 use openssl::stack::Stack;
-use openssl::x509::{X509Extension, X509ReqBuilder};
-use reqwest::{get, header, Client, Response};
+use openssl::x509::extension::SubjectAlternativeName;
+use openssl::x509::X509NameBuilder;
+use openssl::x509::X509Req;
+use reqwest::{header, Client, Response};
 use serde_json::{json, Value};
 
-use openssl::asn1::Asn1Time;
-use openssl::bn::{BigNum, MsbOption};
 use openssl::ec::{EcGroup, EcKey};
 use openssl::nid::Nid;
-use openssl::x509::extension::{BasicConstraints, ExtendedKeyUsage, SubjectAlternativeName};
-use openssl::x509::{X509NameBuilder, X509Req, X509};
 
 use super::{create_jws::create_jws, types::DirectoryUrls};
 const JOSE_JSON: &str = "application/jose+json";
@@ -77,14 +72,10 @@ pub async fn new_account(
 pub async fn submit_order(
     client: &Client,
     urls: DirectoryUrls,
-    identifiers: Vec<String>,
+    identifiers: Vec<&str>,
     ec_key_pair: EcKeyPair,
     kid: String,
 ) -> reqwest::Response {
-    // "identifiers": [
-    //      { "type": "dns", "value": "www.example.org" },
-    //      { "type": "dns", "value": "example.org" }
-    //    ],
     let mut payload = JwtPayload::new();
     let nonce = new_nonce(&client, urls.clone().new_nonce).await;
     let _ = payload.set_claim(
@@ -122,7 +113,7 @@ pub async fn fetch_authorizations(response: Value) -> Vec<String> {
         .collect();
     authorizations
 }
-pub async fn fetch_challanges(authorizations: Vec<String>) -> Vec<String> {
+pub async fn choose_challanges(authorizations: Vec<String>, challange_type: &str) -> Vec<String> {
     let client = Client::new();
     let mut challanges: Vec<String> = Vec::new();
     for authz in authorizations {
@@ -132,7 +123,7 @@ pub async fn fetch_challanges(authorizations: Vec<String>) -> Vec<String> {
             .as_array()
             .unwrap()
             .iter()
-            .find(|challange| challange["type"] == "dns-01")
+            .find(|challange| challange["type"] == challange_type)
             .unwrap();
         challanges.push(challange["url"].as_str().unwrap().to_string());
     }
@@ -181,60 +172,6 @@ pub async fn fetch_order_status(client: &Client, order_url: &str) -> Result<Valu
     let response = client.get(order_url).send().await?;
     response.json::<Value>().await
 }
-pub async fn post_dns_record(body: String) -> Response {
-    let api_token = "bjlYz_K2uEn278Bcp2GY8hVEgokT-GZsOnFH2otq";
-    let zone_id = "c99a975281977d4a887921558d4fd76d";
-    let url = format!(
-        "https://api.cloudflare.com/client/v4/zones/{}/dns_records",
-        zone_id
-    );
-    let client = reqwest::Client::new();
-
-    let response = client
-        .post(&url)
-        .bearer_auth(api_token)
-        .body(format!(
-            r#"{{
-            "type": "TXT",
-            "name": "_acme-challenge.mateuszchudy.lat",
-            "content": "{}  ",
-            "ttl": 120
-        }}"#,
-            body
-        ))
-        .send()
-        .await
-        .unwrap();
-    response
-}
-pub async fn check_dns_record() {
-    let client = reqwest::Client::new();
-    let api_token = "bjlYz_K2uEn278Bcp2GY8hVEgokT-GZsOnFH2otq";
-    let zone_id = "c99a975281977d4a887921558d4fd76d";
-    let url = format!(
-        "https://api.cloudflare.com/client/v4/zones/{}/dns_records",
-        zone_id
-    );
-    let response = client
-        .get(&url)
-        .bearer_auth(api_token)
-        .send()
-        .await
-        .unwrap();
-
-    let response_body = response.text().await.unwrap();
-
-    // Optionally, you can print the entire response body
-    println!("Response: {}", response_body);
-
-    // Parse the JSON and inspect the TXT records
-    let json: Value = serde_json::from_str(&response_body).unwrap();
-    if let Some(records) = json["result"].as_array() {
-        for record in records {
-            println!("Record found: {} -> {}", record["name"], record["content"]);
-        }
-    }
-}
 pub fn get_thumbprint(ec_key_pair: EcKeyPair) -> String {
     let jwk_json = ec_key_pair.to_jwk_public_key();
     let mut jwk_btree_map = BTreeMap::new();
@@ -263,13 +200,17 @@ pub fn get_thumbprint(ec_key_pair: EcKeyPair) -> String {
     let jwk_digest = hash(MessageDigest::sha256(), sorted_jwk_json.as_bytes()).unwrap();
     BASE64_URL_SAFE_NO_PAD.encode(&jwk_digest)
 }
-pub async fn order_finalization(csr:String, urls:DirectoryUrls, ec_key_pair:EcKeyPair, kid:String,finalization_url:String)->Response{
+pub async fn order_finalization(
+    csr: String,
+    urls: DirectoryUrls,
+    ec_key_pair: EcKeyPair,
+    kid: String,
+    finalization_url: String,
+) -> Response {
     let client = Client::new();
     let mut payload = JwtPayload::new();
     let nonce = new_nonce(&client, urls.clone().new_nonce).await;
-    let _ = payload.set_claim(
-        "csr",
-        Some(serde_json::Value::String(csr)));
+    let _ = payload.set_claim("csr", Some(serde_json::Value::String(csr)));
     let body = create_jws(
         nonce,
         payload,
@@ -288,20 +229,30 @@ pub fn get_key_authorization(token: String, ec_key_pair: EcKeyPair) -> String {
     let key_auth_digest = hash(MessageDigest::sha256(), key_authorization.as_bytes()).unwrap();
     BASE64_URL_SAFE_NO_PAD.encode(&key_auth_digest)
 }
-pub fn generate_csr(
-    domain: &str,
-) -> Result<String, openssl::error::ErrorStack> {
+
+pub fn generate_csr(domain: Vec<&str>) -> Result<String, openssl::error::ErrorStack> {
     let group = EcGroup::from_curve_name(Nid::X9_62_PRIME256V1)?;
     let ec_key = EcKey::generate(&group)?;
     let pkey = PKey::from_ec_key(ec_key)?;
     // Build the X509 request with the domain name
     let mut name_builder = X509NameBuilder::new()?;
-    name_builder.append_entry_by_nid(openssl::nid::Nid::COMMONNAME, domain)?;
+    name_builder.append_entry_by_nid(openssl::nid::Nid::COMMONNAME, domain[0])?;
     let name = name_builder.build();
+
+    let mut san_builder = SubjectAlternativeName::new();
+    for d in domain {
+        san_builder.dns(d);
+    }
 
     let mut req_builder = X509Req::builder()?;
     req_builder.set_subject_name(&name)?;
     req_builder.set_pubkey(&pkey)?;
+    // Add the SAN extension (Subject Alternative Name
+    let context = req_builder.x509v3_context(None);
+    let san_extension = san_builder.build(&context)?;
+    let mut stack = Stack::new()?;
+    stack.push(san_extension)?;
+    req_builder.add_extensions(&stack)?;
     req_builder.sign(&pkey, openssl::hash::MessageDigest::sha256())?;
 
     let req = req_builder.build();
@@ -357,12 +308,6 @@ mod tests {
             println!("Account creation failed: {:?}", response.text().await?);
         }
         println!("{:?}", accountlink);
-        Ok(())
-    }
-    #[tokio::test]
-    async fn test_post_dns_record() -> Result<(), Box<dyn std::error::Error>> {
-        post_dns_record("token".to_string()).await;
-        check_dns_record().await;
         Ok(())
     }
 }

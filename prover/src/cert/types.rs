@@ -1,5 +1,4 @@
 use base64::prelude::{Engine, BASE64_URL_SAFE_NO_PAD};
-use josekit::jwk::Jwk;
 use serde::Deserialize;
 use serde::Serialize;
 
