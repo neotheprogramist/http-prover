@@ -94,8 +94,8 @@ pub async fn submit_order(
     post(client, urls.new_order, body).await
 }
 
-pub async fn fetch_authorizations(response: Response) -> Vec<String> {
-    let order = response.json::<Value>().await.unwrap();
+pub async fn fetch_authorizations(response: Value) -> Vec<String> {
+    let order = response;
     let authorizations: Vec<String> = order["authorizations"]
         .as_array()
         .unwrap()
@@ -160,7 +160,7 @@ pub async fn post(client: &Client, url_value: String, body: String) -> reqwest::
     response
 }
 
-pub async fn post_dns_record(body: String) -> Response{
+pub async fn post_dns_record(body: String) -> Response {
     let api_token = "bjlYz_K2uEn278Bcp2GY8hVEgokT-GZsOnFH2otq";
     let zone_id = "c99a975281977d4a887921558d4fd76d";
     let url = format!(
@@ -176,7 +176,7 @@ pub async fn post_dns_record(body: String) -> Response{
             r#"{{
             "type": "TXT",
             "name": "_acme-challenge.mateuszchudy.lat",
-            "content": "{}",
+            "content": "{}  ",
             "ttl": 120
         }}"#,
             body
@@ -194,10 +194,12 @@ pub async fn check_dns_record() {
         "https://api.cloudflare.com/client/v4/zones/{}/dns_records",
         zone_id
     );
-    let response = client.get(&url)
+    let response = client
+        .get(&url)
         .bearer_auth(api_token)
         .send()
-        .await.unwrap();
+        .await
+        .unwrap();
 
     let response_body = response.text().await.unwrap();
 
@@ -211,8 +213,8 @@ pub async fn check_dns_record() {
             println!("Record found: {} -> {}", record["name"], record["content"]);
         }
     }
-
 }
+
 #[cfg(test)]
 mod tests {
     use crate::cert::create_jws::create_jws;
