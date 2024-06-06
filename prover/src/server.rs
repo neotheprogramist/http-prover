@@ -3,38 +3,14 @@ use crate::{
         self,
         authorizer::{Authorizer, FileAuthorizer},
     },
-    cert::{
-        cert_menager::{
-            fetch_authorizations, fetch_challanges, get_challanges_tokens, new_directory,
-            new_nonce, post_dns_record, respond_to_challange, submit_order,
-        },
-        create_jws::create_jws,
-    },
-    prove, Args,
-};
-use axum::{
-    extract::Path, middleware::future::FromExtractorResponseFuture, response::IntoResponse,
-    Extension, Router,
-};
-use base64::prelude::BASE64_URL_SAFE_NO_PAD;
-use base64::Engine;
-use curve25519_dalek::digest::consts::U64;
-use josekit::{
-    jwk::{
-        self,
-        alg::ec::{EcCurve, EcKeyPair},
-    },
-    jwt::JwtPayload,
-};
-use openssl::{
-    hash::{hash, MessageDigest},
-    pkey::{PKey, Public},
-};
+    cert::cert_menager::{fetch_authorizations, fetch_challanges, fetch_order_status, generate_csr, get_challanges_tokens, get_key_authorization, new_directory, order_finalization, post_dns_record, respond_to_challange, submit_order}, prove, Args};
+use axum::{http::response, Router};
+use josekit::jwk::alg::ec::{EcCurve, EcKeyPair};
 use prove::errors::ServerError;
-use reqwest::{get, header, Client, StatusCode};
-use serde_json::{json, Value};
+use reqwest::Client;
+use serde_json::Value;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     sync::{Arc, Mutex},
 };
 use std::{net::SocketAddr, time::Duration};
@@ -65,67 +41,89 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         ec_key_pair.clone(),
     )
     .await;
-    let account_url = account.headers().get("location").unwrap().to_str().unwrap();
+   
+    let account_url = account
+    .headers()
+    .get("location")
+    .ok_or("Location header missing").unwrap()
+    .to_str().unwrap();
 
     let order = submit_order(
         &client,
-        urls,
+        urls.clone(),
         vec!["mateuszchudy.lat".to_string()],
         ec_key_pair.clone(),
         account_url.to_string(),
     )
     .await;
-    let order_copy = order.json::<Value>().await.unwrap().clone();
-    let finalize_url = order_copy["finalize"].as_str().unwrap();
-    println!("{:?}", finalize_url);
-    let authorizations = fetch_authorizations(order_copy).await;
-    let challanges = fetch_challanges(authorizations).await;
-    let tokens = get_challanges_tokens(challanges.clone()).await;
-    let jwk_json = ec_key_pair.to_jwk_public_key();
-    let mut jwk_btree_map = BTreeMap::new();
-    println!("{:?}", jwk_json.curve());
-    jwk_btree_map.insert("crv", jwk_json.curve().unwrap().to_string());
-    jwk_btree_map.insert("kty", jwk_json.key_type().to_string());
-    jwk_btree_map.insert(
-        "x",
-        jwk_json
-            .parameter("x")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string(),
-    );
-    jwk_btree_map.insert(
-        "y",
-        jwk_json
-            .parameter("y")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string(),
-    );
 
-    // Convert to canonical JSON string
-    let sorted_jwk_json = json!(jwk_btree_map).to_string();
-    let jwk_digest = hash(MessageDigest::sha256(), sorted_jwk_json.as_bytes()).unwrap();
-    let thumbprint = BASE64_URL_SAFE_NO_PAD.encode(&jwk_digest);
-    // Construct key authorization using the token and the thumbprint
-    let key_authorization = format!("{}.{}", tokens[0], thumbprint);
+    let order_url = order.headers()
+        .get("location")
+        .ok_or("Location header missing").unwrap()
+        .to_str().unwrap()
+        .to_owned();  // Make an owned copy of the URL
 
-    // Compute SHA-256 hash of the key authorization
-    let key_auth_digest = hash(MessageDigest::sha256(), key_authorization.as_bytes()).unwrap();
-    let encoded_digest = BASE64_URL_SAFE_NO_PAD.encode(&key_auth_digest);
+    println!("Order URL: {}", order_url);
+    // Deserialize the JSON body for further processing
+    let order_body: Value = order.json().await.unwrap();
+
+    // Now that we have both `order_url` and `order_body`, we no longer need the original `order`
+    let authorizations = fetch_authorizations(order_body).await;
+    let challenges = fetch_challanges(authorizations).await;
+
+    let tokens = get_challanges_tokens(challenges.clone()).await;
+    let encoded_digest = get_key_authorization(tokens[0].clone(), ec_key_pair.clone());
+
     // Post the DNS record
-    let dns_record = post_dns_record(encoded_digest.clone()).await;
+    post_dns_record(encoded_digest.clone()).await;
+    println!("DNS record posted, waiting for the DNS changes to propagate...");
+    // Wait for the DNS changes to propagate
+    for i in 1..13 {
+        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+        println!("Waiting for DNS changes to propagate... time passed :{} seconds", i*10);
+    }
+    println!("DNS changes should have propagated by now.");
+    // Respond to the challenge
+    respond_to_challange(challenges[0].clone(), ec_key_pair.clone(), account_url.to_string().clone()).await;
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(125)).await; // Wait for initial propagation
+    println!("Challenge responded to, waiting for the order to complete...");
+    loop {
+        let order_status = fetch_order_status(&client, &order_url).await.unwrap();
+        let status = order_status["status"].as_str().unwrap_or("unknown");
 
-    let response =
-        respond_to_challange(challanges[0].clone(), ec_key_pair, account_url.to_string()).await;
-    let response = client.get(challanges[0].clone()).send().await.unwrap();
-    println!("{:?}", response);
-    let response_body = response.json::<Value>().await.unwrap();
-    println!("{:?}", response_body);
+        match status {
+            "valid" => {
+                println!("Order is completed successfully. Downloading certificate...");
+                let certificate_url = order_status["certificate"].as_str().unwrap();
+                let certificate = client.get(certificate_url).send().await.unwrap();
+                let certificate_body = certificate.text().await.unwrap();
+                println!("Certificate: \n {}", certificate_body);
+                break;
+            },
+            "invalid" => {
+                println!("Order has failed.");
+                break;
+            },
+            "pending"  => {
+                println!("Order is pending...");
+                tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+            },
+            "ready" => {
+                println!("Order is ready... finalizing.");
+                let finalization_url = order_status["finalize"].as_str().unwrap();
+                let csr = generate_csr("mateuszchudy.lat").unwrap();
+                order_finalization(csr, urls.clone(), ec_key_pair.clone(), account_url.to_string(), finalization_url.to_string()).await;
+            },
+            "processing" => {
+                println!("Order is processing...");
+                tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+            },
+            _ => {
+                println!("Order status: {}", status);
+                break;
+            }
+        }
+    }
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()

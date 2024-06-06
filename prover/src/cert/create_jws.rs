@@ -1,10 +1,10 @@
 use crate::cert::types::base64;
-use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use josekit::{
     jwk::alg::ec::EcKeyPair,
     jws::{JwsHeader, ES256},
-    jwt::JwtPayload,
+    jwt:: JwtPayload,
 };
 
 use serde_json::json;
@@ -22,7 +22,7 @@ pub fn create_jws(
     if kid.is_some() {
         let value = kid.unwrap();
         header.set_key_id(value); // Set the Key ID
-    } else {
+    }else {
         let jwk = ec_key_pair.to_jwk_public_key();
         header.set_jwk(jwk); // Set the JWK
     }

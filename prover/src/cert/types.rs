@@ -1,4 +1,5 @@
 use base64::prelude::{Engine, BASE64_URL_SAFE_NO_PAD};
+use josekit::jwk::Jwk;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -18,9 +19,4 @@ pub struct DirectoryUrls {
 
 pub fn base64(data: &impl Serialize) -> Result<String, serde_json::Error> {
     Ok(BASE64_URL_SAFE_NO_PAD.encode(serde_json::to_vec(data)?))
-}
-
-pub (crate) struct AccountCredentials {
-    pub(crate) account_url: String,
-    pub(crate) account_key: String,
 }
