@@ -34,7 +34,7 @@ podman = { path = "crates/podman" }
 prefix-hex = "0.7.1"
 prover = { path = "prover" }
 rand = "0.8.5"
-reqwest = { version = "0.12.4", features = ["blocking", "json"] }
+reqwest = { version = "0.12.4", features = ["blocking", "json", "rustls-tls"], default-features = false }
 reqwest_cookie_store = "0.7.0"
 prover-sdk = { path = "prover-sdk" }
 serde = { version = "1.0.197", features = ["derive"] }
