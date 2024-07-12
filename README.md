@@ -61,6 +61,38 @@ Alternatively use the flag `--authorized-keys-path authorized_keys.json` instead
 Note:
 Tests from the sdk lib.rs file should be run separately.
 
+# Prover SSL Certificate Automation
+
+The Prover system automatically applies for an SSL certificate and renews it before expiration. The SSL procedure can be configured using environment variables.
+
+
+Example Environment Variables for Running SSL Procedure
+```
+# Comma-separated list of domain identifiers in one string
+DOMAIN_IDENTIFIERS="example.com,*.example.com"
+
+# Contact email for certificate notifications
+CONTACT_MAILS="example@gmail.com"
+
+# Cloudflare API token for managing DNS records
+API_TOKEN="-zMM48uvEBakd2gcfOFl4uCJS8YB7OHJE-XzAWXh"
+
+# Cloudflare zone ID for the target domain
+ZONE_ID="22bae53e586432f0ea09d615a8f7d510"
+
+# URL for the ACME directory (e.g., Let's Encrypt staging environment)
+URL="https://acme-staging-v02.api.letsencrypt.org/directory"
+
+# Logging configuration for tracing the SSL procedure
+RUST_LOG="lib_acme=trace,acme_controller=trace,prover=trace"
+
+# File path where the certificate will be saved
+CERT_PATH="cert.pem"
+
+# Number of days before the certificate's expiration date when renewal should be triggered
+RENEWAL_THRESHOLD="30"
+```
+
 ## Using sdk
 
 Run command below to generate keys. Pass the public key to operator, after he includes it to the prover you will be able to use sdk.
