@@ -28,5 +28,4 @@ tracing-subscriber.workspace = true
 tracing.workspace = true
 utils.workspace = true
 lib-acme.workspace = true
-acme-controller.workspace = true
 url.workspace = true

@@ -22,7 +22,6 @@ axum = { version = "0.7.5", features = ["http2", "macros", "multipart", "ws"] }
 bytes = "1.4.0"
 cairo-proof-parser = { git = "https://github.com/cartridge-gg/cairo-proof-parser.git" }
 lib-acme = {git = "https://github.com/neotheprogramist/acme-controller.git"}
-acme-controller = {git = "https://github.com/neotheprogramist/acme-controller.git"}
 chrono = "0.4.38"
 clap = { version = "4.5.4", features = ["derive", "env"] }
 common = { path = "crates/common" }
