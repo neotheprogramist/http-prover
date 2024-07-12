@@ -7,8 +7,7 @@ use crate::{
 };
 use acme_controller::CliInput;
 use axum::Router;
-use clap::Parser;
-use lib_acme::cert::cert_manager::{issue_certificate, read_cert, renew_certificate, save_cert};
+use lib_acme::cert::cert_manager::{issue_certificate, read_cert, renew_certificate};
 use prove::errors::ServerError;
 use std::{
     collections::HashMap,
@@ -80,7 +79,7 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
     let listener = TcpListener::bind(address).await?;
 
     tokio::spawn(async move {
-        let result = async {
+        let _result = async {
             let args = CliInput::new();
             let domain_identifiers: Vec<&str> = args.domain_identifiers();
             let contact_mails: Vec<String> = args.contact_mails.clone();
@@ -90,7 +89,7 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
             let path = Path::new(&args.cert_path);
             let dir_url: &Url = &args.url;
             let renewal_threshold = args.renewal_threshold;
-    
+
             issue_certificate(
                 contact_mails.clone(),
                 domain_identifiers.clone(),
@@ -101,9 +100,9 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
                 path,
             )
             .await?;
-    
+
             let cert = read_cert(path)?;
-    
+
             renew_certificate(
                 contact_mails,
                 domain_identifiers,
@@ -116,9 +115,10 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
                 renewal_threshold,
             )
             .await?;
-    
+
             Ok::<(), lib_acme::cert::errors::AcmeErrors>(())
-        }.await;
+        }
+        .await;
     });
 
     // Run the server with graceful shutdown
