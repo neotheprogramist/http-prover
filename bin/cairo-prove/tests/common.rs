@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use prover::server::start;
-use prover::Args;
+use prover::{AcmeArgs, Args};
 use prover_sdk::ProverAccessKey;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
@@ -31,9 +31,10 @@ pub async fn spawn_prover() -> (JoinHandle<()>, ProverAccessKey, Url) {
         authorized_keys: Some(vec![encoded_key]),
         authorized_keys_path: None,
     };
-
+    let acme_args = AcmeArgs::default();
+    
     let handle = tokio::spawn(async move {
-        start(args).await.unwrap();
+        start(args,acme_args).await.unwrap();
     });
 
     let url = Url::parse(&format!("http://localhost:{}", port)).unwrap();

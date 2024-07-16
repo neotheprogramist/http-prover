@@ -16,6 +16,13 @@ pub enum ServerError {
 
     #[error("failed to initializer authorizer")]
     AuthorizerCreation(#[from] AuthorizerError),
+
+    #[error("failed to issue certificate")]
+    IssueCertificate(#[from] lib_acme::cert::errors::AcmeErrors),
+    #[error("Failed to create OpenSSL config")]
+    ConfigCreateError(String),
+    #[error("Failed to reload config")]
+    ConfigReloadError(String),
 }
 
 #[derive(Error, Debug)]

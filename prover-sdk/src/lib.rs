@@ -19,7 +19,7 @@ mod tests {
     use crate::prover_sdk::ProverSDK;
     use crate::ProverAccessKey;
     use prover::server::start;
-    use prover::Args;
+    use prover::{AcmeArgs, Args};
     use tokio::task::JoinHandle;
     use url::Url;
 
@@ -44,9 +44,10 @@ mod tests {
             authorized_keys: Some(vec![encoded_key]),
             authorized_keys_path: None,
         };
-
+        let acme_args = AcmeArgs::default();
+    
         let handle = tokio::spawn(async move {
-            start(args).await.unwrap();
+            start(args,acme_args).await.unwrap();
         });
 
         (handle, key)

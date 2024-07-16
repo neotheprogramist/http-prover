@@ -55,3 +55,4 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = { version = "2.5.1", features = ["serde"] }
 utils = { path = "crates/utils" }
+axum-server = {version ="0.6.0", features = ["tls-openssl"]}

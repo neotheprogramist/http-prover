@@ -1,4 +1,5 @@
-pub async fn shutdown_signal() {
+use std::time::Duration;
+pub async fn shutdown_signal(handle: axum_server::Handle) {
     let ctrl_c = async {
         tokio::signal::ctrl_c()
             .await
@@ -20,4 +21,6 @@ pub async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
+    tracing::info!("Shutting down server");
+    handle.graceful_shutdown(Some(Duration::from_secs(10)));
 }

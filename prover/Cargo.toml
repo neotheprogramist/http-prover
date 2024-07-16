@@ -29,3 +29,4 @@ tracing.workspace = true
 utils.workspace = true
 lib-acme.workspace = true
 url.workspace = true
+axum-server.workspace = true

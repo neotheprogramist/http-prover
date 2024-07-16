@@ -42,25 +42,26 @@ pub struct AcmeArgs {
     pub zone_id: String,
     #[arg(short = 'u', long, env)]
     pub url: Url,
-    #[arg(short = 'p', long, env)]
-    pub cert_path: PathBuf,
     #[arg(short = 'r', long, env)]
     pub renewal_threshold: i32,
 }
 
 impl AcmeArgs {
+    #[must_use]
     pub fn split_identifiers(&self) -> Vec<String> {
         self.domain_identifiers
             .iter()
             .flat_map(|s| s.split(',').map(str::trim).map(String::from))
             .collect()
     }
+    #[must_use]
     pub fn split_contact_mail(&self) -> Vec<String> {
         self.contact_mails
             .iter()
             .flat_map(|s| s.split(',').map(str::trim).map(String::from))
             .collect()
     }
+    #[must_use]
     pub fn new() -> Self {
         let tmp = AcmeArgs::parse();
         let processed_identifiers = tmp.split_identifiers();
@@ -77,5 +78,10 @@ impl AcmeArgs {
             .map(String::as_str)
             .clone()
             .collect()
+    }
+}
+impl Default for AcmeArgs{
+    fn default() -> Self{
+        Self::new()
     }
 }

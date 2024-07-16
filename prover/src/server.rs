@@ -3,17 +3,19 @@ use crate::{
         self,
         authorizer::{Authorizer, FileAuthorizer},
     },
-    prove, AcmeArgs, Args,
+    prove::{self},
+    AcmeArgs, Args,
 };
 use axum::Router;
-use lib_acme::cert::cert_manager::{issue_certificate, read_cert, renew_certificate};
+use axum_server::tls_openssl::OpenSSLConfig;
+use lib_acme::cert::{cert_manager::CertificateManager, errors::AcmeErrors, types::ChallangeType};
 use prove::errors::ServerError;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
 use std::{net::SocketAddr, time::Duration};
-use tokio::net::TcpListener;
+use tokio::{select, sync::oneshot};
 use tower_http::{limit::RequestBodyLimitLayer, timeout::TimeoutLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utils::shutdown::shutdown_signal;
@@ -37,7 +39,32 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+    let cert_manager = CertificateManager::new(
+        acme_args.contact_mails,
+        acme_args.domain_identifiers,
+        ChallangeType::Dns01,
+        acme_args.api_token,
+        acme_args.zone_id,
+        acme_args.url,
+        acme_args.renewal_threshold,
+    );
+    cert_manager.issue_certificate().await?;
 
+    let cert = cert_manager
+        .get_cert()
+        .await?
+        .ok_or(AcmeErrors::MutexPoisonedError(
+            "Failed to acquire cert lock".to_string(),
+        ))?
+        .to_pem()
+        .map_err(|_| AcmeErrors::ConversionError)?;
+    let key = cert_manager
+        .get_key_pem()
+        .await?
+        .ok_or(AcmeErrors::ConversionError)?;
+
+    let config = OpenSSLConfig::from_pem(&cert, &key)
+        .map_err(|e| ServerError::ConfigCreateError(e.to_string()))?;
     let authorizer = match args.authorized_keys_path {
         Some(path) => {
             tracing::trace!("Using authorized keys file");
@@ -58,7 +85,8 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
         jwt_secret_key: args.jwt_secret_key,
         authorizer,
     };
-
+    let handle = axum_server::Handle::new();
+    let (shutdown_tx, mut shutdown_rx) = oneshot::channel();
     // Create a regular axum app.
     let app = Router::new()
         .nest("/", auth::auth(&state))
@@ -68,51 +96,54 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
             TraceLayer::new_for_http(),
             TimeoutLayer::new(Duration::from_secs(60 * 60)),
         ));
-
+    let config_clone = config.clone();
     let address: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
-    tracing::trace!("start listening on {}", address);
+    tracing::trace!("start listening on {}", address.clone());
+    let _renew_handle: tokio::task::JoinHandle<()> = tokio::spawn(async move {
+        let _result = async move {
+            loop {
+                cert_manager.renew_certificate().await?;
+                let new_cert = cert_manager
+                    .get_cert()
+                    .await?
+                    .ok_or(AcmeErrors::MutexPoisonedError(
+                        "Failed to acquire cert lock".to_string(),
+                    ))?
+                    .to_pem()
+                    .map_err(|_| AcmeErrors::ConversionError)?;
+                let new_key = cert_manager
+                    .get_key_pem()
+                    .await?
+                    .ok_or(AcmeErrors::ConversionError)?;
+                config_clone
+                    .reload_from_pem(&new_cert, &new_key)
+                    .map_err(|e| ServerError::ConfigReloadError(e.to_string()))?;
+                select! {
+                    _ = &mut shutdown_rx => {
+                        tracing::info!("renewal task received shutdown signal");
+                        break;
+                    }
 
-    // Create a `TcpListener` using tokio.
-    let listener = TcpListener::bind(address).await?;
-
-    tokio::spawn(async move {
-        let _result = async {
-            let challange_type = lib_acme::cert::types::ChallangeType::Dns01;
-
-            issue_certificate(
-                acme_args.contact_mails.clone(),
-                acme_args.domain_identifiers(),
-                challange_type.clone(),
-                acme_args.api_token.as_str(),
-                acme_args.zone_id.as_str(),
-                &acme_args.url,
-                &acme_args.cert_path,
-            )
-            .await?;
-
-            let cert = read_cert(&acme_args.cert_path)?;
-
-            renew_certificate(
-                acme_args.contact_mails.clone(),
-                acme_args.domain_identifiers(),
-                challange_type,
-                &acme_args.api_token,
-                &acme_args.zone_id,
-                &acme_args.url,
-                &cert,
-                &acme_args.cert_path,
-                acme_args.renewal_threshold,
-            )
-            .await?;
-
-            Ok::<(), lib_acme::cert::errors::AcmeErrors>(())
+                }
+            }
+            Ok::<(), ServerError>(())
         }
         .await;
     });
+    let server = axum_server::bind_openssl(address, config.clone())
+        .handle(handle.clone())
+        .serve(app.clone().into_make_service());
 
-    // Run the server with graceful shutdown
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    tokio::select! {
+    result = server => {
+        if let Err(err) = result {
+            tracing::error!("server error: {}", err);
+        }
+    },
+    _ = shutdown_signal(handle.clone()) => {
+        tracing::info!("shutdown signal received");
+        let _ = shutdown_tx.send(());
+        }
+    }
     Ok(())
 }
