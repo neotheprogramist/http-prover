@@ -31,7 +31,7 @@ pub struct AppState {
 }
 
 pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
-    // Enable tracing.
+    // Enable tracing for logging
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -39,6 +39,8 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+
+    // Initialize the CertificateManager for handling SSL certificates
     let cert_manager = CertificateManager::new(
         acme_args.contact_mails,
         acme_args.domain_identifiers,
@@ -50,6 +52,7 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
     );
     cert_manager.issue_certificate().await?;
 
+    // Get the certificate and key in PEM format
     let cert = cert_manager
         .get_cert()
         .await?
@@ -63,8 +66,11 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
         .await?
         .ok_or(AcmeErrors::ConversionError)?;
 
+    // Create OpenSSL configuration from the PEM certificate and key
     let config = OpenSSLConfig::from_pem(&cert, &key)
         .map_err(|e| ServerError::ConfigCreateError(e.to_string()))?;
+
+    // Initialize the authorizer based on provided arguments
     let authorizer = match args.authorized_keys_path {
         Some(path) => {
             tracing::trace!("Using authorized keys file");
@@ -77,6 +83,7 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
         }
     };
 
+    // Create application state
     let state = AppState {
         prover_image_name: "Sample".to_string(),
         nonces: Arc::new(Mutex::new(HashMap::new())),
@@ -85,21 +92,27 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
         jwt_secret_key: args.jwt_secret_key,
         authorizer,
     };
+
     let handle = axum_server::Handle::new();
     let (shutdown_tx, mut shutdown_rx) = oneshot::channel();
-    // Create a regular axum app.
+
+    // Create the axum application with routes and middleware
     let app = Router::new()
         .nest("/", auth::auth(&state))
         .nest("/prove", prove::router(&state))
         .layer((
-            RequestBodyLimitLayer::new(100 * 1024 * 1024),
-            TraceLayer::new_for_http(),
-            TimeoutLayer::new(Duration::from_secs(60 * 60)),
+            RequestBodyLimitLayer::new(100 * 1024 * 1024), // Limit request body size to 100MB
+            TraceLayer::new_for_http(), // Enable HTTP tracing
+            TimeoutLayer::new(Duration::from_secs(60 * 60)), // Set request timeout to 1 hour
         ));
-    let config_clone = config.clone();
+
+    // Parse the socket address from arguments
     let address: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
     tracing::trace!("start listening on {}", address.clone());
+
+    let config_clone = config.clone();
     let _renew_handle: tokio::task::JoinHandle<()> = tokio::spawn(async move {
+        // Task to renew the SSL certificate periodically
         let _result = async move {
             loop {
                 cert_manager.renew_certificate().await?;
@@ -123,26 +136,28 @@ pub async fn start(args: Args, acme_args: AcmeArgs) -> Result<(), ServerError> {
                         tracing::info!("renewal task received shutdown signal");
                         break;
                     }
-
                 }
             }
             Ok::<(), ServerError>(())
         }
         .await;
     });
+
+    // Start the server with OpenSSL configuration
     let server = axum_server::bind_openssl(address, config.clone())
         .handle(handle.clone())
         .serve(app.clone().into_make_service());
 
+    // Wait for either the server to exit or a shutdown signal
     tokio::select! {
-    result = server => {
-        if let Err(err) = result {
-            tracing::error!("server error: {}", err);
-        }
-    },
-    _ = shutdown_signal(handle.clone()) => {
-        tracing::info!("shutdown signal received");
-        let _ = shutdown_tx.send(());
+        result = server => {
+            if let Err(err) = result {
+                tracing::error!("server error: {}", err);
+            }
+        },
+        _ = shutdown_signal(handle.clone()) => {
+            tracing::info!("shutdown signal received");
+            let _ = shutdown_tx.send(());
         }
     }
     Ok(())
