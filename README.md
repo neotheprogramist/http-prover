@@ -86,9 +86,6 @@ URL="https://acme-staging-v02.api.letsencrypt.org/directory"
 # Logging configuration for tracing the SSL procedure
 RUST_LOG="lib_acme=trace,acme_controller=trace,prover=trace"
 
-# File path where the certificate will be saved
-CERT_PATH="cert.pem"
-
 # Number of days before the certificate's expiration date when renewal should be triggered
 RENEWAL_THRESHOLD="30"
 ```
