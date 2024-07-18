@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
-source .venv/bin/activate && \
+set -eux
+
+. .venv/bin/activate
+
+mkdir -p resources
+
 cairo-compile \
     examples/CairoZero/fibonacci.cairo \
   --output resources/fibonacci_compiled.json \
-  --proof_mode && \
+  --proof_mode
+
 deactivate

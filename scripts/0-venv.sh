@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
 
+set -eux
+
 # Define the name of the virtual environment
 VENV_NAME=".venv"
 
 # Check if the virtual environment already exists
 if [ ! -d "$VENV_NAME" ]; then
     # If it doesn't exist, create the virtual environment
-    python -m venv $VENV_NAME && \
+    python -m venv $VENV_NAME
 
     # Activate the virtual environment
-    source $VENV_NAME/bin/activate && \
+    . $VENV_NAME/bin/activate
 
     # Upgrade pip to the latest version
-    pip install --upgrade pip && \
+    pip install --upgrade pip
 
     # Install the required packages from the requirements.txt file
-    pip install cairo-lang==0.13.1 && \
+    pip install sympy==1.12.1
+    pip install cairo-lang==0.13.1
 
     # Deactivate the virtual environment
     deactivate
