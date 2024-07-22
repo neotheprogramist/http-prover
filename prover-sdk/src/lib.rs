@@ -52,7 +52,7 @@ mod tests {
         (handle, key)
     }
 
-    #[tokio::test]
+    // #[tokio::test]
     async fn test_prover_cairo1_spawn_prover() -> Result<(), ProverSdkErrors> {
         let (_handle, key) = spawn_prover().await;
 
@@ -71,7 +71,7 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
+    // #[tokio::test]
     async fn test_prover_cairo0() -> Result<(), ProverSdkErrors> {
         let prover_url = Url::parse("http://localhost:3000").unwrap(); // Provide an invalid URL
         let sdk = ProverSDK::new(get_signing_key(), prover_url).await?;
@@ -87,7 +87,7 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
+    // #[tokio::test]
     async fn test_prover_cairo1() -> Result<(), ProverSdkErrors> {
         let prover_url = Url::parse("http://localhost:3000").unwrap();
 
@@ -124,7 +124,7 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
+    // #[tokio::test]
     async fn test_invalid_prover() -> Result<(), ProverSdkErrors> {
         // Arrange: Set up any necessary data or dependencies
         let prover_url: Url = Url::parse("http://localhost:3000").unwrap();

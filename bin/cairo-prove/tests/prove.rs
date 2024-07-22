@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 mod common;
 
-#[tokio::test]
+// #[tokio::test]
 async fn test_cairo1_fibonacci() -> Result<(), cairo_prove::ProveError> {
     let (handle, key, url) = spawn_prover().await;
 

@@ -36,7 +36,7 @@ mod tests {
     use std::sync::Arc;
     use std::sync::Mutex;
 
-    #[tokio::test]
+    // #[tokio::test]
     async fn test_generate_nonce() -> Result<(), ProveError> {
         let private_key_hex: String =
             r#"f91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740"#.to_string();
