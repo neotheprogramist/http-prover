@@ -285,11 +285,11 @@ mod tests {
     }"#;
         let prove_input = Cairo0ProverInput {
             program: compiled_program,
-            program_input: serde_json::to_value(&input).unwrap(),
+            program_input: serde_json::to_value(input).unwrap(),
             layout: "recursive".to_string(),
         };
         let serialized = &serde_json::to_string(&prove_input).unwrap();
-        let deserialized: Cairo0ProverInput = serde_json::from_str(&serialized).unwrap();
+        let deserialized: Cairo0ProverInput = serde_json::from_str(serialized).unwrap();
         assert_eq!(deserialized, prove_input);
         Ok(())
     }

@@ -60,7 +60,7 @@ mod tests {
         let params = GenerateNonceRequest {
             public_key: public_key_hex,
         };
-        let result = generate_nonce(State(state.into()), Query(params)).await;
+        let result = generate_nonce(State(state), Query(params)).await;
 
         assert!(result.is_ok());
 
