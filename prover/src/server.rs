@@ -58,8 +58,15 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         authorizer,
     };
 
+    async fn ok_handler() -> &'static str {
+        "OK"
+    }
+
+    let ok_router = Router::new().route("/", axum::routing::get(ok_handler));
+
     // Create a regular axum app.
     let app = Router::new()
+        .nest("/", ok_router)
         .nest("/", auth::auth(&state))
         .nest("/prove", prove::router(&state))
         .layer((
