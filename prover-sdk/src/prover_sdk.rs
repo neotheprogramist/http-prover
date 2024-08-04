@@ -29,9 +29,9 @@ impl ProverSDK {
     ///
     /// Returns a `ProverSDKBuilder` which can be used to further configure the ProverSDK.
     pub async fn new(access_key: ProverAccessKey, url: Url) -> Result<ProverSDK, ProverSdkErrors> {
-        let auth_url = url.join("/auth").map_err(ProverSdkErrors::UrlParseError)?;
+        let auth_url = url.join("auth").map_err(ProverSdkErrors::UrlParseError)?;
         let prover_url = url
-            .join("/prove/cairo1")
+            .join("prove/cairo1")
             .map_err(ProverSdkErrors::UrlParseError)?;
 
         ProverSDKBuilder::new(auth_url, prover_url)
