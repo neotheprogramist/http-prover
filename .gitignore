@@ -25,3 +25,5 @@
 output.json
 examples/Cairo/prover_input.json
 examples/CairoZero/prover_input.json
+corelib
+corelib-cairo1-compile
