@@ -14,9 +14,9 @@ pub async fn root(
     _claims: Claims,
     Json(program_input): Json<Cairo0ProverInput>,
 ) -> Result<String, ProveError> {
-    let program_input_path: PathBuf = Path::new("examples/CairoZero/input.json").to_path_buf();
-    let program_path: PathBuf = Path::new("examples/CairoZero/program.json").to_path_buf();
-    let proof_path: PathBuf = Path::new("program_proof.json").to_path_buf();
+    let program_input_path: PathBuf = Path::new("resources/CairoZero/input.json").to_path_buf();
+    let program_path: PathBuf = Path::new("resources/CairoZero/program.json").to_path_buf();
+    let proof_path: PathBuf = Path::new("program_proof_cairo0.json").to_path_buf();
 
     let input = serde_json::to_string(&program_input.program_input)?;
     let program = serde_json::to_string(&program_input.program)?;
@@ -30,13 +30,13 @@ pub async fn root(
 
     let mut command = Command::new("cairo-run");
     command
-        .arg("--trace_file=examples/CairoZero/program_trace.trace")
-        .arg("--memory_file=examples/CairoZero/program_memory.memory")
+        .arg("--trace_file=resources/CairoZero/program_trace.trace")
+        .arg("--memory_file=resources/CairoZero/program_memory.memory")
         .arg("--layout")
         .arg(layout)
         .arg("--proof_mode")
-        .arg("--air_public_input=examples/CairoZero/program_public_input.json")
-        .arg("--air_private_input=examples/CairoZero/program_private_input.json")
+        .arg("--air_public_input=resources/CairoZero/program_public_input.json")
+        .arg("--air_private_input=resources/CairoZero/program_private_input.json")
         .arg("--program_input")
         .arg(program_input_path)
         .arg("--program")
@@ -50,19 +50,20 @@ pub async fn root(
 
     //HERE CONFIG-GENERATOR should return cpu_air_prover_config.json
     generate(
-        "examples/CairoZero/program_public_input.json",
-        "examples/CairoZero/cpu_air_params.json",
+        "resources/CairoZero/program_public_input.json",
+        "resources/CairoZero/cpu_air_params.json",
     );
 
     let mut command_proof = Command::new("cpu_air_prover");
     command_proof
-        .arg("--public_input_file=examples/CairoZero/program_public_input.json")
-        .arg("--private_input_file=examples/CairoZero/program_private_input.json")
+        .arg("--public_input_file=resources/CairoZero/program_public_input.json")
+        .arg("--private_input_file=resources/CairoZero/program_private_input.json")
         .arg("--prover_config_file=examples/CairoZero/cpu_air_prover_config.json")
-        .arg("--parameter_file=examples/CairoZero/cpu_air_params.json")
+        .arg("--parameter_file=resources/CairoZero/cpu_air_params.json")
         .arg("-generate_annotations")
-        .arg("--out_file=program_proof.json");
-    
+        .arg("--out_file")
+        .arg(proof_path.clone());
+
     let mut child_proof = command_proof.spawn()?;
 
     // Wait for the process to finish
