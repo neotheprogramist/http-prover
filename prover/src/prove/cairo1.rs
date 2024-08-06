@@ -2,7 +2,7 @@ use crate::auth::jwt::Claims;
 use crate::prove::errors::ProveError;
 use axum::Json;
 use common::Cairo1ProverInput;
-use config_generator::generate_config::generate;
+use config_generator::generate_config;
 use serde_json::Value;
 use tokio::fs;
 
@@ -23,27 +23,21 @@ pub async fn root(
 
     let json_value: Value = serde_json::from_str(&input)?;
 
-    // Get the array from the JSON
     if let Value::Array(array) = json_value {
-        // Convert each JSON value to a String and join them with a space
         let output_str = array
             .into_iter()
-            .filter_map(|v| {
-                // Convert the value to a String if it's a string
-                v.as_str().map(|s| s.to_owned())
-            })
+            .filter_map(|v| v.as_str().map(|s| s.to_owned()))
             .collect::<Vec<String>>()
             .join(" ");
 
-        // Write the final output to a file
         fs::write(program_input_path.clone(), output_str).await?;
     } else {
         eprintln!("Expected a JSON array");
         std::process::exit(1);
     }
 
-    // // Write `program` field to a file
     fs::write(&program_path, program.clone()).await?;
+
     //run cairo1-run
     let mut command = Command::new("cairo1-run");
     command
@@ -58,13 +52,10 @@ pub async fn root(
         .arg(program_input_path)
         .arg(program_path.clone());
 
-    // Start the process
     let mut child = command.spawn()?;
-
-    // Wait for the process to finish
     let _status = child.wait()?;
 
-    generate(
+    generate_config::generate(
         "resources/Cairo/program_public_input.json",
         "resources/Cairo/cpu_air_params.json",
     );
@@ -81,15 +72,10 @@ pub async fn root(
         .arg("-generate-annotations");
 
     let mut child_proof = command_proof.spawn()?;
-
-    // Wait for the process to finish
     let _status_proof = child_proof.wait()?;
 
     let result = fs::read_to_string(proof_path).await?;
-
-    // Deserialize the string into a serde_json::Value
     let proof: Value = serde_json::from_str(&result)?;
-
     let final_result = serde_json::to_string_pretty(&proof)?;
 
     Ok(final_result)

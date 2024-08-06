@@ -2,7 +2,7 @@ use crate::auth::jwt::Claims;
 use crate::prove::errors::ProveError;
 use axum::Json;
 use common::Cairo0ProverInput;
-use config_generator::generate_config::generate;
+use config_generator::generate_config;
 use serde_json::Value;
 use std::{
     path::{Path, PathBuf},
@@ -22,12 +22,10 @@ pub async fn root(
     let program = serde_json::to_string(&program_input.program)?;
     let layout = program_input.layout;
 
-    // Write `program_input` field to a file
     fs::write(&program_input_path, input.clone()).await?;
-
-    // // Write `program` field to a file
     fs::write(&program_path, program.clone()).await?;
 
+    //run cairo-run
     let mut command = Command::new("cairo-run");
     command
         .arg("--trace_file=resources/CairoZero/program_trace.trace")
@@ -42,18 +40,15 @@ pub async fn root(
         .arg("--program")
         .arg(program_path);
 
-    // Start the process
     let mut child = command.spawn()?;
-
-    // Wait for the process to finish
     let _status = child.wait()?;
 
-    //HERE CONFIG-GENERATOR should return cpu_air_prover_config.json
-    generate(
+    generate_config::generate(
         "resources/CairoZero/program_public_input.json",
         "resources/CairoZero/cpu_air_params.json",
     );
 
+    //run cpu_air_prover
     let mut command_proof = Command::new("cpu_air_prover");
     command_proof
         .arg("--public_input_file=resources/CairoZero/program_public_input.json")
@@ -65,15 +60,10 @@ pub async fn root(
         .arg(proof_path.clone());
 
     let mut child_proof = command_proof.spawn()?;
-
-    // Wait for the process to finish
     let _status_proof = child_proof.wait()?;
 
     let result = fs::read_to_string(proof_path).await?;
-
-    // Deserialize the string into a serde_json::Value
     let proof: Value = serde_json::from_str(&result)?;
-
     let final_result = serde_json::to_string_pretty(&proof)?;
 
     Ok(final_result)
