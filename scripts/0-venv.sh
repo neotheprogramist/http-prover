@@ -16,6 +16,7 @@ if [ ! -d "$VENV_NAME" ]; then
 
     # Install the required packages from the requirements.txt file
     pip install cairo-lang==0.13.1 && \
+    pip install sympy==1.12.1 && \
 
     # Deactivate the virtual environment
     deactivate
