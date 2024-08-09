@@ -8,6 +8,7 @@ members = [
     "crates/utils",
     "prover",
     "prover-sdk",
+    "cairo1-compile",
 ]
 
 [workspace.package]
@@ -53,3 +54,5 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = { version = "2.5.0", features = ["serde"] }
 utils = { path = "crates/utils" }
 config-generator = { git = "https://github.com/piotr-stec/genereate-config.git" }
+cairo-lang-compiler = { git = "https://github.com/starkware-libs/cairo", tag = "v2.7.0-rc.3", default-features = false }
+cairo-lang-sierra = { git = "https://github.com/starkware-libs/cairo", tag = "v2.7.0-rc.3", default-features = false }
