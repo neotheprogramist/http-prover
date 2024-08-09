@@ -19,19 +19,18 @@
 # vscode
 **/.vscode/
 
+# Git
+**/.git
+
+# Envs
+**/*.cargo
+
+# Venvs
+**/.venv
+
 /resources
-/.cargo
-.venv
 output.json
 examples/Cairo/prover_input.json
 examples/CairoZero/prover_input.json
-corelib
-corelib-cairo1-compile
-*_input.json
-program.json
-*params.json
-*memory.bin
-*trace.bin
-*memory.memory
-*trace.memory
-*proof.json
+/corelib
+
