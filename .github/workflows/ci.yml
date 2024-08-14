@@ -1,0 +1,46 @@
+name: ci
+on: push
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format
+        run: cargo fmt --all -- --check
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clippy
+        run: cargo clippy --fix
+      - name: Check for diff
+        run: git diff --exit-code
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --verbose
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: asdf-vm/actions/install@v3
+      - name: Prepare
+        shell: bash
+        run: |
+          sh scripts/0-venv.sh
+          sh scripts/1-compile.sh
+          sh scripts/2-merge.sh
+          ls -Rl examples/
+      - name: Build
+        run: cargo build --verbose
+      - name: Run prover
+        run: |
+          set -eux
+          cargo run -p prover -- --jwt-secret-key "asdf" --authorized-keys "0xd16b71c90dbf897e5964d2f267d04664b3c035036559d712994739ea6cf2fd9f" --message-expiration-time 60 --session-expiration-time 3600 &
+          while ! curl localhost:3000; do sleep 5; done
+      - name: Run tests
+        run: cargo test --no-fail-fast --workspace --verbose
