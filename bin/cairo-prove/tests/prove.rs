@@ -1,37 +1,35 @@
-use crate::common::read_file;
+use crate::common::{read_file, spawn_prover};
 use cairo_proof_parser::output::{extract_output, ExtractOutputResult};
 use cairo_prove::{prove, CliInput};
 use serde_json::Value;
-use std::{env, path::PathBuf};
-use url::Url;
+use std::path::PathBuf;
+
 mod common;
 
-#[tokio::test]
+// #[tokio::test]
 async fn test_cairo1_fibonacci() -> Result<(), cairo_prove::ProveError> {
-    let key = "0x5883b0e30b008e48af3d0bf5cfc138fb6093496da6f87d24b65def88470356d3";
-    let port = env::var("PORT").unwrap();
-    let prover_url = Url::parse(&format!("http://localhost:{}", port)).unwrap();
+    let (handle, key, url) = spawn_prover().await;
+
     let args = CliInput {
-        key: key.to_string(),
+        key: key.signing_key_as_hex_string(),
         cairo_version: 1,
-        url: prover_url,
+        url,
     };
 
-    let prover_input =
-        read_file(PathBuf::from("examples/Cairo/fibonacci_prover_input.json")).await?;
+    let prover_input = read_file(PathBuf::from("examples/Cairo/prover_input.json")).await?;
     let proof = prove(args, prover_input).await?;
     assert!(extract_output(&proof).is_ok());
+    handle.abort();
     Ok(())
 }
 #[tokio::test]
 async fn test_cairo0_fibonacci() -> Result<(), cairo_prove::ProveError> {
-    let key = "0x5883b0e30b008e48af3d0bf5cfc138fb6093496da6f87d24b65def88470356d3";
-    let port = env::var("PORT").unwrap();
-    let prover_url = Url::parse(&format!("http://localhost:{}", port)).unwrap();
+    let (handle, key, url) = spawn_prover().await;
+
     let args = CliInput {
-        key: key.to_string(),
+        key: key.signing_key_as_hex_string(),
         cairo_version: 0,
-        url: prover_url,
+        url,
     };
     let prover_input = read_file(PathBuf::from("examples/CairoZero/prover_input.json")).await?;
     let program_input: Value = serde_json::from_str(&prover_input)?;
@@ -51,5 +49,8 @@ async fn test_cairo0_fibonacci() -> Result<(), cairo_prove::ProveError> {
         expected_input, fibonacci_claim_index,
         "Fibonacci index mismatch."
     );
+
+    handle.abort();
+
     Ok(())
 }

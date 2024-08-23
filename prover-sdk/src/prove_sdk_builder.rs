@@ -255,10 +255,7 @@ impl ProverSDKBuilder {
                 .base_url
                 .join("/register")
                 .map_err(ProverSdkErrors::UrlParseError)?,
-            verify: self
-                .base_url
-                .join("/verify")
-                .map_err(ProverSdkErrors::UrlParseError)?,
+
             authority: signing_key,
         })
     }

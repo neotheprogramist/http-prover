@@ -1,4 +1,5 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
+use podman::process::ProcessError;
 use serde_json::json;
 use std::{env::VarError, net::AddrParseError};
 use thiserror::Error;
@@ -19,6 +20,9 @@ pub enum ServerError {
 
 #[derive(Error, Debug)]
 pub enum ProveError {
+    #[error("failed to prove state-diff-commitment")]
+    StateDiffCommitment(#[from] ProcessError),
+
     #[error("Unauthorized public key request")]
     UnauthorizedPublicKey,
 
@@ -59,6 +63,9 @@ pub enum ProveError {
 impl IntoResponse for ProveError {
     fn into_response(self) -> axum::response::Response {
         let (status, error_message) = match &self {
+            ProveError::StateDiffCommitment(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string())
+            }
             ProveError::Parse(_) => (StatusCode::BAD_REQUEST, self.to_string()),
             ProveError::UnauthorizedPublicKey => (StatusCode::UNAUTHORIZED, self.to_string()),
             ProveError::Unauthorized(_) => (StatusCode::UNAUTHORIZED, self.to_string()),

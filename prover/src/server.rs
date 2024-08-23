@@ -3,11 +3,9 @@ use crate::{
         self,
         authorizer::{Authorizer, FileAuthorizer},
     },
-    prove,
-    verifier::verify_proof,
-    Args,
+    prove, Args,
 };
-use axum::{routing::post, Router};
+use axum::Router;
 use prove::errors::ServerError;
 use std::{
     collections::HashMap,
@@ -71,7 +69,6 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         .nest("/", ok_router)
         .nest("/", auth::auth(&state))
         .nest("/prove", prove::router(&state))
-        .route("/verify", post(verify_proof))
         .layer((
             RequestBodyLimitLayer::new(100 * 1024 * 1024),
             TraceLayer::new_for_http(),

@@ -1,13 +1,13 @@
-use core::array::ArrayTrait;
-fn main(mut n: Array<felt252>) -> Array<felt252> {
-    let r = fib(n.pop_front().unwrap());
-    array![r.into()]
+use core::felt252;
+
+fn main(n: felt252) -> Array<felt252> {
+    let result = fib(1, 1, n);
+    array![result]
 }
 
-fn fib(n: felt252) -> felt252 {
-    if n == 1 || n == 0 {
-        return n;
+fn fib(a: felt252, b: felt252, n: felt252) -> felt252 {
+    match n {
+        0 => a,
+        _ => fib(b, a + b, n - 1),
     }
-
-    fib(n - 1) + fib(n - 2)
 }
