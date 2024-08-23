@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod prove;
 pub mod server;
+pub mod verifier;
 use std::path::PathBuf;
 
 use clap::{arg, Parser, ValueHint};

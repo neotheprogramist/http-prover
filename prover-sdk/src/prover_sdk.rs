@@ -15,6 +15,7 @@ pub struct ProverSDK {
     pub prover_cairo1: Url,
     pub register: Url,
     pub authority: ProverAccessKey,
+    pub verify: Url,
 }
 
 impl ProverSDK {
@@ -157,6 +158,16 @@ impl ProverSDK {
             }
         };
 
+        Ok(response_data)
+    }
+    pub async fn verify(self, proof: String) -> Result<String, ProverSdkErrors> {
+        let response = self
+            .client
+            .post(self.verify.clone())
+            .json(&proof)
+            .send()
+            .await?;
+        let response_data = response.text().await?;
         Ok(response_data)
     }
 }

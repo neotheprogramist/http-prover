@@ -33,10 +33,22 @@ mod tests {
         // If authentication fails, print out the error message for debugging purposes
         if let Err(err) = proof {
             println!(" error: {}", err);
+        } else {
+            let result: Result<String, ProverSdkErrors> = sdk.verify(proof.unwrap()).await;
+            assert!(result.is_ok(), "Failed to verify proof");
+            assert_eq!(result.unwrap(), "true");
         }
         Ok(())
     }
 
+    #[tokio::test]
+    async fn test_verify_invalid_proof() {
+        let prover_url = Url::parse("http://localhost:3040").unwrap(); // Provide an invalid URL
+        let sdk = ProverSDK::new(get_signing_key(), prover_url).await.unwrap();
+        let result = sdk.verify("invalid_proof".to_string()).await;
+        assert!(result.is_ok(), "Failed to verify proof");
+        assert_eq!(result.unwrap(), "false");
+    }
     #[tokio::test]
     async fn test_prover_cairo1() -> Result<(), ProverSdkErrors> {
         let prover_url = Url::parse("http://localhost:3040").unwrap();
@@ -51,9 +63,14 @@ mod tests {
         let proof = sdk.prove_cairo1(data).await;
         // If authentication fails, print out the error message
         assert!(proof.is_ok(), "Failed to prove with invalid url");
+
         // If authentication fails, print out the error message for debugging purposes
         if let Err(err) = proof {
             println!(" error: {}", err);
+        } else {
+            let result: Result<String, ProverSdkErrors> = sdk.verify(proof.unwrap()).await;
+            assert!(result.is_ok(), "Failed to verify proof");
+            assert_eq!(result.unwrap(), "true");
         }
         Ok(())
     }
