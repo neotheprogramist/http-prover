@@ -39,6 +39,8 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    let keys = args.authorized_keys.clone().unwrap_or_default();
+
     let authorizer = match args.authorized_keys_path {
         Some(path) => {
             tracing::trace!("Using authorized keys file");
@@ -80,6 +82,7 @@ pub async fn start(args: Args) -> Result<(), ServerError> {
 
     let address: SocketAddr = format!("{}:{}", args.host, args.port).parse()?;
     tracing::trace!("start listening on {}", address);
+    tracing::trace!("provided public keys {:?}", keys);
 
     // Create a `TcpListener` using tokio.
     let listener = TcpListener::bind(address).await?;
