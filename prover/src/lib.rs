@@ -25,6 +25,6 @@ pub struct Args {
     pub session_expiration_time: u32,
     #[arg(long, short, env, value_hint = ValueHint::FilePath)]
     pub authorized_keys_path: Option<PathBuf>,
-    #[arg(long, short = 'f', env)]
+    #[arg(long, short = 'f', env, value_delimiter = ',')]
     pub authorized_keys: Option<Vec<String>>,
 }
