@@ -8,7 +8,7 @@ The Cairo Proving Server is the core component responsible for managing and veri
 Here is an example of running the server with custom settings:
 
 ```sh
-cairo-prover-server   --host 127.0.0.1   --port 8080   --message-expiration-time 7200   --session-expiration-time 14400   --jwt-secret-key "my_super_secret_key"   --authorized-keys-path /path/to/authorized_keys.json   --authorized-keys "key1,key2,key3"   --num-workes 8   --admin-key "admin_super_secret_key"
+cairo-prover-server   --host 127.0.0.1   --port 8080   --message-expiration-time 7200   --session-expiration-time 14400   --jwt-secret-key "my_super_secret_key"   --authorized-keys-path /path/to/authorized_keys.json   --authorized-keys "key1,key2,key3"   --num-workers 8   --admin-key "admin_super_secret_key"
 ```
 ## Command-Line Options
 
@@ -91,7 +91,7 @@ The server can be configured via command-line arguments or environment variables
 
   This provides a list of authorized public keys directly on the command line or via environment variable.
 
-### 8. `--num-workes`
+### 8. `--num-workers`
 
 - **Description:** The number of worker threads that the server should use for handling tasks.
 - **Environment Variable:** `NUM_WORKES`
@@ -99,7 +99,7 @@ The server can be configured via command-line arguments or environment variables
 - **Example:**
 
   ```sh
-  --num-workes 8
+  --num-workers 8
   ```
 
 ### 9. `--admin-key`

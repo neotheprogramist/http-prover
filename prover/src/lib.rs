@@ -29,7 +29,7 @@ pub struct Args {
     #[arg(long, env, value_delimiter = ',')]
     pub authorized_keys: Vec<String>,
     #[arg(long, env, default_value = "4")]
-    pub num_workes: usize,
+    pub num_workers: usize,
     #[arg(long, env)]
     pub admin_key: String,
 }

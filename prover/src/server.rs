@@ -69,7 +69,7 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
         nonces: Arc::new(Mutex::new(HashMap::new())),
         authorizer,
         job_store: Arc::new(Mutex::new(Vec::new())),
-        thread_pool: Arc::new(Mutex::new(ThreadPool::new(args.num_workes))),
+        thread_pool: Arc::new(Mutex::new(ThreadPool::new(args.num_workers))),
         admin_key,
         sse_tx: Arc::new(Mutex::new(sse_tx)),
     };
