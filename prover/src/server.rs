@@ -52,13 +52,13 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
 
     let admin_key_bytes = prefix_hex::decode::<Vec<u8>>(args.admin_key)
         .map_err(|e| AuthorizerError::PrefixHexConversionError(e.to_string()))?;
-    let admin_key = VerifyingKey::from_bytes(&admin_key_bytes.try_into().unwrap())?;
+    let admin_key = VerifyingKey::from_bytes(&admin_key_bytes.try_into()?)?;
 
     authorizer.authorize(admin_key).await?;
     for key in args.authorized_keys.iter() {
         let verifying_key_bytes = prefix_hex::decode::<Vec<u8>>(key)
             .map_err(|e| AuthorizerError::PrefixHexConversionError(e.to_string()))?;
-        let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes.try_into().unwrap())?;
+        let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes.try_into()?)?;
         authorizer.authorize(verifying_key).await?;
     }
     let (sse_tx, _) = broadcast::channel(100);

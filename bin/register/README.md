@@ -12,11 +12,11 @@ This project provides a command-line tool for registering new keys with the Prov
 ## Installation
 
 ```bash
-cargo install --git https://github.com/chudkowsky/http_prover_refactored.git register
+cargo install --git  https://github.com/cartridge-gg/http-prover.git register
 ```
 or alternatively 
 ```bash
-git clone https://github.com/chudkowsky/http_prover_refactored.git 
+git clone  https://github.com/cartridge-gg/http-prover.git
 cargo build
 cargo run -p register
 ```

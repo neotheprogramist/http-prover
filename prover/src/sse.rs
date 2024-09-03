@@ -28,11 +28,12 @@ pub async fn sse_handler(
         jobs.iter()
             .find(|job| job.id == job_id)
             .map(|job| job.status.clone())
+            .unwrap_or(JobStatus::Unknown)
     };
 
     let stream = stream! {
-        if job_status.is_some() && matches!(job_status.clone().unwrap(), JobStatus::Completed | JobStatus::Failed) {
-            yield Ok(axum::response::sse::Event::default().data(serde_json::to_string(&(job_status.unwrap(), job_id)).unwrap()));
+        if matches!(job_status.clone(), JobStatus::Completed | JobStatus::Failed) {
+            yield Ok(axum::response::sse::Event::default().data(serde_json::to_string(&(job_status, job_id)).unwrap()));
             return;
         }
         while let Ok(message) = rx.recv().await {

@@ -16,4 +16,5 @@ pub enum JobStatus {
     Running,
     Completed,
     Failed,
+    Unknown,
 }

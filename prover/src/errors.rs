@@ -32,10 +32,17 @@ pub enum ProverError {
     AddressParse(#[from] AddrParseError),
     #[error(transparent)]
     KeyError(#[from] ed25519_dalek::SignatureError),
+    #[error("Failed to send message via SSE{0}")]
+    SseError(String),
 }
 impl<T> From<SendError<T>> for ProverError {
     fn from(err: SendError<T>) -> ProverError {
         ProverError::SendError(err.to_string())
+    }
+}
+impl From<Vec<u8>> for ProverError {
+    fn from(err: Vec<u8>) -> Self {
+        ProverError::Authorizer(AuthorizerError::DataError(err))
     }
 }
 impl IntoResponse for ProverError {
@@ -73,6 +80,7 @@ impl IntoResponse for ProverError {
             },
             ProverError::AddressParse(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             ProverError::KeyError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            ProverError::SseError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
         };
 
         let body = Json(json!({ "error": error_message }));

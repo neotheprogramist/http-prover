@@ -74,7 +74,7 @@ pub async fn verify_proof(
     if sender.receiver_count() > 0 {
         sender
             .send(serde_json::to_string(&(JobStatus::Completed, job_id))?)
-            .unwrap();
+            .map_err(|e| ProverError::SseError(e.to_string()))?;
     }
     Ok(())
 }

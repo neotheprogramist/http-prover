@@ -54,7 +54,7 @@ Authenticate with the Prover service using your private key and the authenticati
 async fn main() -> Result<(), ProverSdkErrors> {
     let private_key_hex : String= env::var("PRIVATE_KEY")?;
     let url_auth =  "http://localhost:3000/auth";
-    let url_prover = "http://localhost:3000/prove/cairo1";
+    let url_prover = "http://localhost:3000/prove/cairo";
 
     let result = ProverSDK::new(url_auth, url_prover)
         .auth(&private_key_hex)

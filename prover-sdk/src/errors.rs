@@ -30,4 +30,6 @@ pub enum SdkErrors {
     RegisterResponseError(String),
     #[error("SSE error: {0}")]
     SSEError(String),
+    #[error("Invalid key")]
+    InvalidKey,
 }

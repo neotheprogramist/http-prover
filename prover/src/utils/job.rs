@@ -88,6 +88,12 @@ pub async fn get_job(
                         .unwrap_or_else(|| "Unknown error".to_string()),
                 }),
             ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(JobResponse::Failed {
+                    error: "Unknown error".to_string(),
+                }),
+            ),
         };
         (status, response).into_response()
     } else {
