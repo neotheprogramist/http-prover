@@ -1,207 +1,258 @@
-use crate::auth::jwt::encode_jwt;
-use crate::auth::jwt::Keys;
-use crate::prove::errors::ProveError;
-use crate::prove::models::{GenerateNonceRequest, GenerateNonceResponse, JWTResponse, Nonce};
-use crate::server::AppState;
+use super::jwt::{encode_jwt, Keys};
+use crate::{errors::ProverError, server::AppState};
 use axum::{
-    extract::{Json, Query, State},
-    http::{self, HeaderMap, HeaderValue},
+    extract::State,
+    http::{header::SET_COOKIE, HeaderMap, HeaderValue},
     response::IntoResponse,
+    Json,
 };
-use common::AddAuthorizedRequest;
-use common::ValidateSignatureRequest;
-use ed25519_dalek::Signature;
-use ed25519_dalek::VerifyingKey;
-use std::collections::HashSet;
-use tokio::{fs::File, io::AsyncReadExt};
-
-use super::authorizer::AuthorizationProvider;
+use common::{models::JWTResponse, requests::ValidateSignatureRequest};
+use ed25519_dalek::Verifier;
 pub const COOKIE_NAME: &str = "jwt_token";
 
-/// Generates a nonce for a given public key and stores it in the application state.
-///
-/// # Parameters
-///
-/// - `state`: The application state containing a mutex-guarded HashMap to store nonces.
-/// - `params`: The query parameters containing the public key for which nonce is generated.
-///
-/// # Returns
-///
-/// Returns a JSON response containing the generated nonce and its expiration time, or
-/// an error if the public key is missing.
-pub async fn generate_nonce(
-    State(state): State<AppState>,
-    Query(params): Query<GenerateNonceRequest>,
-) -> Result<Json<GenerateNonceResponse>, ProveError> {
-    if params.public_key.trim().is_empty() {
-        return Err(ProveError::MissingPublicKey);
-    }
-    if !state.authorizer.is_authorized(&params.public_key).await? {
-        return Err(ProveError::UnauthorizedPublicKey);
-    }
-
-    let message_expiration_time: usize = state.message_expiration_time;
-    let nonce: Nonce = Nonce::new(32);
-    let nonce_string = nonce.to_string();
-    let mut nonces: std::sync::MutexGuard<'_, std::collections::HashMap<String, String>> =
-        state.nonces.lock().unwrap();
-    let formatted_key = params.public_key.trim().to_lowercase();
-
-    nonces.insert(formatted_key.clone(), nonce_string);
-
-    Ok(Json(GenerateNonceResponse {
-        nonce,
-        expiration: message_expiration_time,
-    }))
-}
-
-/// Validates the signature provided in the request payload and generates a JWT token if the signature is valid.
-///
-/// # Parameters
-///
-/// - `state`: The application state containing nonce information stored in a mutex-guarded HashMap.
-/// - `payload`: JSON payload containing the public key and signature to be validated.
-///
 pub async fn validate_signature(
     State(state): State<AppState>,
     Json(payload): Json<ValidateSignatureRequest>,
-) -> Result<impl IntoResponse, ProveError> {
-    let encoded_key = prefix_hex::encode(payload.public_key.to_bytes());
-
-    if !state.authorizer.is_authorized(&encoded_key).await? {
-        return Err(ProveError::UnauthorizedPublicKey);
+) -> Result<impl IntoResponse, ProverError> {
+    tracing::info!("Validating signature");
+    let nonces = state.nonces.lock().await;
+    let public_key = nonces.get(&payload.message.nonce);
+    let public_key = match public_key {
+        Some(public_key) => public_key,
+        None => {
+            return Err(ProverError::CustomError(
+                "Public key for nonce not found".to_string(),
+            ))
+        }
+    };
+    tracing::info!("Public key found for nonce");
+    let encoded_public_key = prefix_hex::encode(public_key.to_bytes());
+    let serialized_message = serde_json::to_string(&payload.message)?;
+    let verification = public_key
+        .verify(serialized_message.as_bytes(), &payload.signature)
+        .is_ok();
+    if !verification {
+        return Err(ProverError::CustomError("Signature is invalid".to_string()));
     }
-
-    let session_expiration_time: usize = state.session_expiration_time;
-
-    let nonces = state
-        .nonces
-        .lock()
-        .map_err(|_| ProveError::InternalServerError("Failed to lock state".to_string()))?;
-
-    let user_nonce = nonces.get(&encoded_key).ok_or_else(|| {
-        ProveError::NotFound(format!(
-            "Nonce not found for the provided public key: {}",
-            &encoded_key
-        ))
-    })?;
-
-    payload
-        .public_key
-        .verify_strict(user_nonce.as_bytes(), &payload.signature)
-        .map_err(ProveError::Unauthorized)?;
-
-    let expiration = chrono::Utc::now() + chrono::Duration::seconds(session_expiration_time as i64);
+    tracing::info!("Signature is valid");
+    let expiration =
+        chrono::Utc::now() + chrono::Duration::seconds(state.message_expiration_time as i64);
     let token = encode_jwt(
-        &encoded_key,
+        &encoded_public_key,
         expiration.timestamp() as usize,
         Keys::new(state.jwt_secret_key.clone().as_bytes()),
-    )
-    .map_err(|_| ProveError::InternalServerError("JWT generation failed".to_string()))?;
+        payload.message.session_key,
+    )?;
+    tracing::info!("JWT token generated");
     let cookie_value = format!(
         "{}={}; HttpOnly; Secure; Path=/; Max-Age={}",
-        COOKIE_NAME, token, session_expiration_time
+        COOKIE_NAME, token, state.session_expiration_time
     );
     let mut headers = HeaderMap::new();
     headers.insert(
-        http::header::SET_COOKIE,
-        HeaderValue::from_str(&cookie_value).map_err(|_| {
-            ProveError::InternalServerError("Failed to set cookie header".to_string())
-        })?,
+        SET_COOKIE,
+        HeaderValue::from_str(&cookie_value)
+            .map_err(|_| ProverError::CustomError("Invalid cookie value".to_string()))?,
     );
-
+    tracing::info!("Cookie set");
     Ok((
         headers,
         Json(JWTResponse {
             jwt_token: token,
-            expiration: session_expiration_time,
+            expiration: expiration.timestamp() as u64,
+            session_key: Some(payload.message.session_key),
         }),
     ))
 }
+#[cfg(test)]
+mod tests {
+    use std::{collections::HashMap, sync::Arc};
 
-/// Validates the signature provided in the request payload and generates a JWT token if the signature is valid.
-///
-/// # Parameters
-///
-/// - `state`: The application state containing nonce information stored in a mutex-guarded HashMap.
-/// - `payload`: JSON payload containing the public key to be added and the signature to be validated.
-///
-/// # Returns
-///
-/// Returns a tuple containing HTTP headers and a JSON response with a JWT token and its expiration time if the signature is valid.
-pub async fn add_authorized_key(
-    State(state): State<AppState>,
-    Json(payload): Json<AddAuthorizedRequest>,
-) -> Result<impl IntoResponse, ProveError> {
-    let encoded_key = prefix_hex::encode(payload.new_key.to_bytes());
+    use axum::extract::State;
+    use axum::Json;
+    use common::requests::{Message, ValidateSignatureRequest};
+    use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
+    use rand::rngs::OsRng;
+    use tokio::sync::Mutex;
 
-    // if !state.authorizer.is_authorized(&encoded_key).await? {
-    //     return Err(ProveError::UnauthorizedPublicKey);
-    // }
-
-    // payload
-    //     .authority
-    //     .verify_strict(payload.new_key.as_bytes(), &payload.signature)
-    //     .map_err(ProveError::Unauthorized)?;
-
-    state
-        .authorizer
-        .authorize(&encoded_key)
-        .await
-        .map_err(|_| ProveError::InternalServerError("Failed to authorize key".to_string()))?;
-
-    Ok(())
-}
-
-/// Verifies a signature given a nonce and a public key using ed25519_dalek.
-///
-/// - `signature`: The signature object.
-/// - `nonce`: The message that was signed, as a string.
-/// - `public_key_hex`: The hexadecimal string of the public key.
-///
-/// Returns `true` if the signature is valid; `false` otherwise.
-pub fn verify_signature(signature: &Signature, nonce: &str, public_key_hex: &str) -> bool {
-    let public_key_bytes = match prefix_hex::decode::<Vec<u8>>(public_key_hex) {
-        Ok(bytes) => bytes,
-        Err(_) => return false,
+    use crate::{
+        auth::{authorizer::Authorizer, nonce::Nonce, validate_signature},
+        errors::ProverError,
+        server::AppState,
+        threadpool::ThreadPool,
     };
 
-    let mut public_key_array = [0u8; 32];
-    public_key_array.copy_from_slice(&public_key_bytes[..32]); // Copy the first 32 bytes
-
-    let public_key = match VerifyingKey::from_bytes(&public_key_array) {
-        Ok(pk) => pk,
-        Err(_) => return false,
-    };
-
-    public_key
-        .verify_strict(nonce.as_bytes(), signature)
-        .is_ok()
-}
-
-/// Reads the authorized keys from the `authorized_keys.json` file and returns them as a HashSet.
-///
-/// # Returns
-///
-/// Returns a HashSet containing the authorized keys, or an error if reading the file fails.
-pub async fn is_public_key_authorized(path: &str, public_key: &str) -> Result<(), ProveError> {
-    let formatted_key = public_key.trim().to_lowercase();
-
-    // Read the authorized_keys.json file
-    let mut file = File::open(path).await.map_err(ProveError::FileReadError)?;
-    let mut contents = String::new();
-
-    file.read_to_string(&mut contents)
-        .await
-        .map_err(ProveError::FileReadError)?;
-
-    let authorized_keys: HashSet<String> = serde_json::from_str::<Vec<String>>(&contents)
-        .map_err(|_| ProveError::JsonParsingFailed("authorized_keys.json".to_string()))?
-        .into_iter()
-        .collect();
-
-    if !authorized_keys.contains(&formatted_key) {
-        return Err(ProveError::UnauthorizedPublicKey);
+    fn generate_signing_key() -> SigningKey {
+        SigningKey::generate(&mut OsRng)
     }
-    Ok(())
+
+    fn generate_verifying_key(signing_key: &SigningKey) -> VerifyingKey {
+        signing_key.verifying_key()
+    }
+
+    #[tokio::test]
+    async fn test_valid_signature() {
+        let nonce = Nonce::new(32);
+        let nonce_string = nonce.to_string();
+        let private_key = generate_signing_key();
+        let public_key = generate_verifying_key(&private_key);
+        let session_private_key = generate_signing_key();
+        let session_public_key = generate_verifying_key(&session_private_key);
+        let message = Message {
+            session_key: session_public_key,
+            nonce: nonce_string.clone(),
+        };
+        let signed_message = private_key.sign(serde_json::to_string(&message).unwrap().as_bytes());
+        let payload = ValidateSignatureRequest {
+            message,
+            signature: signed_message,
+        };
+        let nonces: Arc<Mutex<HashMap<String, VerifyingKey>>> =
+            Arc::new(Mutex::new(HashMap::new()));
+        nonces.lock().await.insert(nonce_string.clone(), public_key);
+
+        let app_state = AppState {
+            jwt_secret_key: "secret".to_string(),
+            job_store: Default::default(),
+            message_expiration_time: 100,
+            session_expiration_time: 100,
+            thread_pool: Arc::new(Mutex::new(ThreadPool::new(1))),
+            nonces,
+            authorizer: Authorizer::Open,
+            admin_key: generate_verifying_key(&generate_signing_key()),
+            sse_tx: Arc::new(Mutex::new(tokio::sync::broadcast::channel(100).0)),
+        };
+
+        let result = validate_signature(State(app_state), Json(payload)).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_invalid_signature() {
+        let nonce = Nonce::new(32);
+        let nonce_string = nonce.to_string();
+        let signing_private_key = generate_signing_key();
+        let false_private_key = generate_signing_key();
+        let false_public_key = generate_verifying_key(&false_private_key);
+        let session_private_key = generate_signing_key();
+        let session_public_key = generate_verifying_key(&session_private_key);
+        let message = Message {
+            session_key: session_public_key,
+            nonce: nonce_string.clone(),
+        };
+        let signed_message =
+            signing_private_key.sign(serde_json::to_string(&message).unwrap().as_bytes());
+        let payload = ValidateSignatureRequest {
+            message,
+            signature: signed_message,
+        };
+        let nonces: Arc<Mutex<HashMap<String, VerifyingKey>>> =
+            Arc::new(Mutex::new(HashMap::new()));
+        nonces
+            .lock()
+            .await
+            .insert(nonce_string.clone(), false_public_key);
+
+        let app_state = AppState {
+            jwt_secret_key: "secret".to_string(),
+            job_store: Default::default(),
+            message_expiration_time: 100,
+            session_expiration_time: 100,
+            thread_pool: Arc::new(Mutex::new(ThreadPool::new(1))),
+            nonces,
+            authorizer: Authorizer::Open,
+            admin_key: generate_verifying_key(&generate_signing_key()),
+            sse_tx: Arc::new(Mutex::new(tokio::sync::broadcast::channel(100).0)),
+        };
+
+        let result = validate_signature(State(app_state), Json(payload)).await;
+        assert!(result.is_err());
+        if let Err(ProverError::CustomError(message)) = result {
+            assert_eq!(message, "Signature is invalid".to_string());
+        } else {
+            panic!("Unexpected error type");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_nonce_not_found() {
+        let nonce = Nonce::new(32);
+        let nonce_string = nonce.to_string();
+        let private_key = generate_signing_key();
+        let session_private_key = generate_signing_key();
+        let session_public_key = generate_verifying_key(&session_private_key);
+        let message = Message {
+            session_key: session_public_key,
+            nonce: nonce_string.clone(),
+        };
+        let signed_message = private_key.sign(serde_json::to_string(&message).unwrap().as_bytes());
+        let payload = ValidateSignatureRequest {
+            message,
+            signature: signed_message,
+        };
+        let nonces: Arc<Mutex<HashMap<String, VerifyingKey>>> =
+            Arc::new(Mutex::new(HashMap::new())); // Empty nonces map
+
+        let app_state = AppState {
+            jwt_secret_key: "secret".to_string(),
+            job_store: Default::default(),
+            message_expiration_time: 100,
+            session_expiration_time: 100,
+            thread_pool: Arc::new(Mutex::new(ThreadPool::new(1))),
+            nonces,
+            authorizer: Authorizer::Open,
+            admin_key: generate_verifying_key(&generate_signing_key()),
+            sse_tx: Arc::new(Mutex::new(tokio::sync::broadcast::channel(100).0)),
+        };
+
+        let result = validate_signature(State(app_state), Json(payload)).await;
+        assert!(result.is_err());
+        if let Err(ProverError::CustomError(message)) = result {
+            assert_eq!(message, "Public key for nonce not found".to_string());
+        } else {
+            panic!("Unexpected error type");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_missing_signature() {
+        let nonce = Nonce::new(32);
+        let nonce_string = nonce.to_string();
+        let public_key = generate_verifying_key(&generate_signing_key());
+        let session_private_key = generate_signing_key();
+        let session_public_key = generate_verifying_key(&session_private_key);
+        let message = Message {
+            session_key: session_public_key,
+            nonce: nonce_string.clone(),
+        };
+
+        let payload = ValidateSignatureRequest {
+            message,
+            signature: Signature::from_bytes(&[0; 64]), // Invalid signature
+        };
+        let nonces: Arc<Mutex<HashMap<String, VerifyingKey>>> =
+            Arc::new(Mutex::new(HashMap::new()));
+        nonces.lock().await.insert(nonce_string.clone(), public_key);
+
+        let app_state = AppState {
+            jwt_secret_key: "secret".to_string(),
+            job_store: Default::default(),
+            message_expiration_time: 100,
+            session_expiration_time: 100,
+            thread_pool: Arc::new(Mutex::new(ThreadPool::new(1))),
+            nonces,
+            authorizer: Authorizer::Open,
+            admin_key: generate_verifying_key(&generate_signing_key()),
+            sse_tx: Arc::new(Mutex::new(tokio::sync::broadcast::channel(100).0)),
+        };
+
+        let result = validate_signature(State(app_state), Json(payload)).await;
+        assert!(result.is_err());
+        if let Err(ProverError::CustomError(message)) = result {
+            assert_eq!(message, "Signature is invalid".to_string());
+        } else {
+            panic!("Unexpected error type");
+        }
+    }
 }

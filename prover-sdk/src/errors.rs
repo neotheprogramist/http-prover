@@ -1,57 +1,33 @@
-use reqwest::Error as ReqwestError;
-use std::env::VarError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ProverSdkErrors {
-    #[error("HTTP request failed: {0}")]
-    RequestFailed(#[from] ReqwestError),
-
-    #[error("Failed to read env variable: {0}")]
-    EnvVarFailed(#[from] VarError),
-
-    #[error("JSON parsing failed: {0}")]
-    JsonParsingFailed(String),
-
-    #[error("Validate signature failed: {0}")]
-    ValidateSignatureResponseError(String),
-
-    #[error("Prove request failed: {0}")]
-    ProveRequestFailed(String),
-
-    #[error("Prove request failed: {0}")]
-    ProveResponseError(String),
-
-    #[error("JSON parsing failed: {0}")]
-    ReqwestBuildError(String),
-
-    #[error("Failed to serialize")]
-    SerdeError(#[from] serde_json::Error),
-
-    #[error("Nonce not found in the response")]
-    NonceNotFound,
-
-    #[error("JWT token not found in the response")]
-    JwtTokenNotFound,
-
-    #[error("Reading input file failed")]
-    ReadFileError(#[from] std::io::Error),
-
-    #[error("Expiration date not found")]
-    ExpirationNotFound,
-
-    #[error("Signing key not found, possibly build without auth.")]
-    SigningKeyNotFound,
-
-    #[error("Nonce request failed: {0}")]
-    NonceRequestFailed(String),
-
-    #[error("Validate signature request failed: {0}")]
-    ValidateSignatureRequestFailed(String),
-
-    #[error("Failed to decode hex")]
-    FromHexError(String),
-
-    #[error("Failed to parse URL")]
+pub enum SdkErrors {
+    #[error(transparent)]
+    ReqwestError(#[from] reqwest::Error),
+    #[error(transparent)]
     UrlParseError(#[from] url::ParseError),
+    #[error("Prover response error: {0}")]
+    ProveResponseError(String),
+    #[error("Get Job response error: {0}")]
+    GetJobResponseError(String),
+    #[error("Prefix error: {0}")]
+    PrefixError(String),
+    #[error("Nonce Request error: {0}")]
+    NonceRequestFailed(String),
+    #[error(transparent)]
+    Parse(#[from] serde_json::Error),
+    #[error("Nonce not found")]
+    NonceNotFound,
+    #[error("Validate Signature response error: {0}")]
+    ValidateSignatureResponseError(String),
+    #[error("JWT Token not found")]
+    JWTTokenNotFound,
+    #[error("JWT Expiration not found")]
+    JWTExpirationNotFound,
+    #[error("Signing key not found")]
+    SigningKeyNotFound,
+    #[error("Register response error: {0}")]
+    RegisterResponseError(String),
+    #[error("SSE error: {0}")]
+    SSEError(String),
 }

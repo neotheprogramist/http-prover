@@ -28,13 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: asdf-vm/actions/install@v3
-      - name: Prepare
-        shell: bash
-        run: |
-          sh scripts/0-venv.sh
-          sh scripts/1-compile.sh
-          sh scripts/2-merge.sh
-          ls -Rl examples/
       - name: Build
         run: cargo build --verbose
       - name: Run tests

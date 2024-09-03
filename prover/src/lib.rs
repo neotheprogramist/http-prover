@@ -1,30 +1,35 @@
 pub mod auth;
+pub mod errors;
+pub mod extractors;
 pub mod prove;
 pub mod server;
+pub mod sse;
+pub mod threadpool;
+pub mod utils;
 pub mod verifier;
 use std::path::PathBuf;
 
-use clap::{arg, Parser, ValueHint};
+use clap::{arg, Parser};
 
-/// Command line arguments for the server
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    /// Host address to bind the server
     #[arg(long, env, default_value = "0.0.0.0")]
     pub host: String,
-
-    /// Port to listen on
     #[arg(long, short, env, default_value = "3000")]
     pub port: u16,
+    #[arg(long, short, env, default_value = "3600")]
+    pub message_expiration_time: usize,
+    #[arg(long, short, env, default_value = "3600")]
+    pub session_expiration_time: usize,
     #[arg(long, short, env)]
     pub jwt_secret_key: String,
-    #[arg(long, short, env)]
-    pub message_expiration_time: u32,
-    #[arg(long, short, env)]
-    pub session_expiration_time: u32,
-    #[arg(long, short, env, value_hint = ValueHint::FilePath)]
-    pub authorized_keys_path: Option<PathBuf>,
-    #[arg(long, short = 'f', env, value_delimiter = ',')]
-    pub authorized_keys: Option<Vec<String>>,
+    #[arg(long, env, default_value = "authorized_keys.json")]
+    pub authorized_keys_path: PathBuf,
+    #[arg(long, env, value_delimiter = ',')]
+    pub authorized_keys: Vec<String>,
+    #[arg(long, env, default_value = "4")]
+    pub num_workes: usize,
+    #[arg(long, env)]
+    pub admin_key: String,
 }

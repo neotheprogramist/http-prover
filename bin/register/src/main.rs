@@ -1,6 +1,6 @@
 use clap::{arg, Parser};
 use ed25519_dalek::VerifyingKey;
-use prover_sdk::{ProverAccessKey, ProverSDK};
+use prover_sdk::{access_key::ProverAccessKey, sdk::ProverSDK};
 use url::Url;
 
 /// Command line arguments for the server
@@ -23,7 +23,7 @@ async fn main() {
 
     let key = ProverAccessKey::from_hex_string(&args.private_key).unwrap();
 
-    let mut sdk = ProverSDK::new(key, args.url)
+    let mut sdk = ProverSDK::new(args.url, key)
         .await
         .expect("Failed to create SDK instance");
 

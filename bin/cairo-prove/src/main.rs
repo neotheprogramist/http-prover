@@ -1,15 +1,20 @@
-use cairo_prove::{prove, CliInput, ProveError};
+use cairo_prove::errors::ProveErrors;
+use cairo_prove::prove::prove;
+use cairo_prove::{fetch::fetch_job, Args};
 use clap::Parser;
-use tokio::io::{self, AsyncReadExt};
-
+use prover_sdk::access_key::ProverAccessKey;
+use prover_sdk::sdk::ProverSDK;
 #[tokio::main]
-pub async fn main() -> Result<(), ProveError> {
-    let args = CliInput::parse();
-
-    // Assume the input data is in JSON format as required by the SDK
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).await?;
-
-    println!("{}", prove(args, input).await?);
+pub async fn main() -> Result<(), ProveErrors> {
+    tracing_subscriber::fmt().init();
+    let args = Args::parse();
+    let access_key = ProverAccessKey::from_hex_string(&args.prover_access_key.clone())?;
+    let sdk = ProverSDK::new(args.prover_url.clone(), access_key).await?;
+    let job = prove(args.clone(), sdk.clone()).await?;
+    if args.wait {
+        let job = fetch_job(sdk, job).await?;
+        let path: std::path::PathBuf = args.program_output;
+        std::fs::write(path, job)?;
+    }
     Ok(())
 }

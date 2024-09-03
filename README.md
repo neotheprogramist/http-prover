@@ -1,131 +1,87 @@
-# Prover SDK
+# Cairo Proving System
 
-The Prover SDK is a Rust library for interacting with the Prover service. It provides functionality for authentication, proving, and error handling.
+This repository contains a comprehensive toolset for proving computations using the Cairo language. The repository includes a server, an SDK for interacting with the server, a binary `cairo-prove` for executing proofs, and helper binaries such as `keygen` and `register`.
 
-## Generating access keys
+## Table of Contents
 
-Before using the prover key has to be authorized by the prover operator. To generate the key use:
+- [Overview](#overview)
+- [Components](#components)
+  - [Server](#server)
+  - [SDK](#sdk)
+  - [Cairo-Prove Binary](#cairo-prove-binary)
+  - [Keygen Binary](#keygen-binary)
+  - [Register Binary](#register-binary)
+  - [Common Library](#common-library)
+- [Examples](#examples)
+- [Scripts](#scripts)
 
-```bash
-cargo run --bin keygen
-```
+## Overview
 
-It will output 2 keys.
+The Cairo Proving System provides tools to prove and verify computations written in the Cairo language. This repository includes:
 
-- send the public key to the prover operator
-- pass the private key to the sdk to use it.
+1. A **server** that manages and verifies proofs.
+2. An **SDK** to interact with the server programmatically.
+3. A **cairo-prove binary** that implements the SDK and allows users to perform proofs from the command line.
+4. Helper binaries like **keygen** and **register** to manage keys and registration.
 
-## Using in code
+## Components
 
-First parse a private key corresponding to an authorized public key.
+### Server
 
-```rust
-ProverAccessKey::from_hex_string(
-    "0xf91350db1ca372b54376b519be8bf73a7bbbbefc4ffe169797bc3f5ea2dec740",
-)
-.unwrap()
-```
+The server is the core of the proving system. It handles proof requests, manages authorization, and verifies proofs.
 
-Then construct an instance with
+- **Directory:** `prover`
+- **Description:** The server is built using a modular design, with components handling authentication, proof generation, verification, and a thread pool to manage concurrent tasks.
+- **Inner README:** [Server README](prover/README.md)
 
-```rust
-let prover_url = Url::parse("http://localhost:3000").unwrap();
-let sdk = ProverSDK::new(key, prover_url).await?;
-```
+### SDK
 
-Then you can use below to prove an execution
+The SDK provides a Rust-based interface for interacting with the server. It abstracts the underlying API calls and simplifies the development of client applications.
 
-```rust
-let data = load_cairo1(PathBuf::from("../prover/resources/input_cairo1.json")).await?;
-let proof = sdk.prove_cairo1(data).await;
-```
+- **Directory:** `prover-sdk`
+- **Description:** The SDK includes modules for handling access keys, managing errors, and building client requests.
+- **Inner README:** [SDK README](prover-sdk/README.md)
 
-# Operating a prover
+### Cairo-Prove Binary
 
-To run the sdk first make sure prover/authorized_keys.json contains your public_key.
+The `cairo-prove` binary is a command-line tool that leverages the SDK to perform proofs. It’s intended for users who want to interact with the proving system without writing custom code.
 
-Run the following command in your terminal:
+- **Inner README:** [Cairo-Prove README](bin/cairo-prove/README.md)
 
-```bash
-cargo run -p prover -- --jwt-secret-key <ENV_VAR_JWT_SECRET_KEY> --message-expiration-time <MESSAGE_EXPIRATION_TIME> --session-expiration-time <SESSION_EXPIRATION_TIME> --authorized-keys <AUTHORIZED_KEY>,<ANOTHER_KEY>
-```
+### Keygen Binary
 
-Alternatively use the flag `--authorized-keys-path authorized_keys.json` instead of `--authorized-keys` to load keys from a json file. It needs to have the format below
+The `keygen` binary is a helper tool for generating cryptographic keys required by the server and SDK.
 
-```json
-["<AUTHORIZED_KEY>", "<ANOTHER_KEY>"]
-```
+- **Inner README:** [Keygen README](bin/keygen/README.md)
 
-Note:
-Tests from the sdk lib.rs file should be run separately.
+### Register Binary
 
-## Using sdk
+The `register` binary is used to register new keys with the server. 
+- **Inner README:** [Register README](bin/register/README.md)
 
-Run command below to generate keys. Pass the public key to operator, after he includes it to the prover you will be able to use sdk.
+### Common Library
 
-```bash
-cargo run --bin keygen
-```
+The common library provides shared utilities and data structures used across the various components.
 
-## Usage
+- **Directory:** `common`
+- **Description:** Includes modules for handling prover inputs, requests, and shared models.
 
-To use the SDK, follow these steps:
+## Examples
 
-Authenticate with the Prover service using your private key and the authentication URL:
+Examples demonstrating how to use the tools are provided in the `examples` directory. These include:
 
-```rust
-#[tokio::main]
-async fn main() -> Result<(), ProverSdkErrors> {
-    let private_key_hex : String= env::var("PRIVATE_KEY")?;
-    let url_auth =  "http://localhost:3000/auth";
-    let url_prover = "http://localhost:3000/prove/cairo1";
+- **Cairo Examples:** `examples/cairo`
+- **Cairo 0 Examples:** `examples/cairo0`
 
-    let result = ProverSDK::new(url_auth, url_prover)
-        .auth(&private_key_hex)
-        .await?;
+Each example contains necessary inputs and compiled programs to run with the `cairo-prove` binary.
 
-    // Handle authentication result
-    Ok(())
-}
-```
+## Scripts
 
-Use the SDK to prove data:
+Helper scripts are included in the `scripts` directory for tasks like running end-to-end tests.
 
-```rust
-#[tokio::main]
-async fn main() -> Result<(), ProverSdkErrors> {
-    // Authentication code goes here...
+- **End-to-End Testing Script:** `scripts/e2e_test.sh`
 
-    let sdk = result.build()?;
-    let data = read_json_file("resources/input.json").await?;
-    let proof = sdk.prove(data).await?;
+## Getting Started
 
-    // Handle proof result
-    Ok(())
-}
-```
+To get started with the Cairo Proving System, please refer to the individual READMEs linked above for detailed instructions on building, configuring, and running each component.
 
-Handle errors using the provided error types:
-
-```rust
-#[tokio::main]
-async fn main() -> Result<(), ProverSdkErrors> {
-    // Authentication code goes here...
-
-    let result = ProverSDK::new(url_auth, url_prover)
-        .auth(&private_key_hex)
-        .await;
-
-    match result {
-        Ok(sdk) => {
-            // Continue with SDK usage...
-        }
-        Err(err) => {
-            // Handle authentication error
-            println!("Authentication failed: {}", err);
-        }
-    }
-
-    Ok(())
-}
-```

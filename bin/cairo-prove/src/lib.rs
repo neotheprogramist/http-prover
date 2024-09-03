@@ -1,62 +1,118 @@
-use clap::Parser;
-use prover_sdk::{Cairo0ProverInput, Cairo1ProverInput, ProverAccessKey, ProverSDK};
+use clap::{Parser, ValueEnum};
+use errors::ProveErrors;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use starknet_types_core::felt::Felt;
+use std::{path::PathBuf, str::FromStr};
 use url::Url;
 
-#[derive(Error, Debug)]
-pub enum ProveError {
-    #[error("Failed to read: {0}")]
-    Read(#[from] tokio::io::Error),
+pub mod errors;
+pub mod fetch;
+pub mod prove;
 
-    #[error("Failed to parse prover key")]
-    DecodeKey(prefix_hex::Error),
-
-    #[error("Failed to initialize or authenticate prover SDK")]
-    Initialize(prover_sdk::ProverSdkErrors),
-
-    #[error("Failed to parse input: {0}")]
-    ParseInput(#[from] serde_json::Error),
-
-    #[error("Failed to prove: {0}")]
-    Prove(prover_sdk::ProverSdkErrors),
+#[derive(Debug, Serialize, Deserialize, ValueEnum, Clone)]
+pub enum CairoVersion {
+    V0,
+    V1,
 }
 
-#[derive(Parser, Debug, Serialize, Deserialize)]
+impl FromStr for CairoVersion {
+    type Err = String;
+
+    fn from_str(input: &str) -> Result<CairoVersion, Self::Err> {
+        match input {
+            "v0" => Ok(CairoVersion::V0),
+            "v1" => Ok(CairoVersion::V1),
+            _ => Err(format!("Invalid Cairo version: {}", input)),
+        }
+    }
+}
+
+#[derive(Parser, Debug, Clone)]
 #[clap(author, version, about, long_about = None)]
-pub struct CliInput {
-    #[arg(short = 'k', long)]
-    pub key: String,
-
-    #[arg(short, long, default_value_t = 1)]
-    pub cairo_version: usize, // 0 or 1,
-
-    #[arg(short, long)]
-    pub url: Url,
+pub struct Args {
+    #[arg(long, env)]
+    pub prover_url: Url,
+    #[arg(long, short, env, default_value = "v1")]
+    pub cairo_version: CairoVersion,
+    #[arg(long, short, env)]
+    pub layout: String,
+    #[arg(long, env)]
+    pub program_path: PathBuf,
+    #[arg(
+        long,
+        env,
+        conflicts_with("program_input"),
+        required_if_eq("cairo_version", "v0")
+    )]
+    pub program_input_path: Option<PathBuf>,
+    #[arg(long, env, value_delimiter = ',')]
+    pub program_input: Vec<Felt>,
+    #[arg(long, env)]
+    pub program_output: PathBuf,
+    #[arg(long, env)]
+    pub prover_access_key: String,
+    #[arg(long, env, default_value = "false")]
+    pub wait: bool,
 }
 
-pub async fn prove(args: CliInput, input: String) -> Result<String, ProveError> {
-    let secret_key = ProverAccessKey::from_hex_string(&args.key).map_err(ProveError::DecodeKey)?;
-    let sdk = ProverSDK::new(secret_key, args.url)
-        .await
-        .map_err(ProveError::Initialize)?;
+fn validate_input(input: &str) -> Result<Vec<Felt>, ProveErrors> {
+    let parts: Vec<&str> = input.split(',').collect();
 
-    let proof = match args.cairo_version {
-        0 => {
-            let input: Cairo0ProverInput =
-                serde_json::from_str(&input).map_err(ProveError::ParseInput)?;
-            sdk.prove_cairo0(input).await.map_err(ProveError::Prove)?
+    let mut felts = Vec::new();
+    for part in parts {
+        let part = part.replace(['[', '\n', ']'], "");
+        match part.trim().parse::<Felt>() {
+            Ok(num) => felts.push(num),
+            Err(_) => {
+                return Err(ProveErrors::Custom(
+                    "Input contains non-numeric characters or spaces".to_string(),
+                ))
+            }
         }
-        1 => {
-            let input: Cairo1ProverInput =
-                serde_json::from_str(&input).map_err(ProveError::ParseInput)?;
-            sdk.prove_cairo1(input).await.map_err(ProveError::Prove)?
-        }
-        _ => panic!("Invalid cairo version"),
-    };
-
-    let proof_json: serde_json::Value =
-        serde_json::from_str(&proof).expect("Failed to parse result");
-
-    Ok(serde_json::to_string_pretty(&proof_json).expect("Failed to serialize result"))
+    }
+    Ok(felts)
+}
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_validate_input() -> Result<(), ProveErrors> {
+        let input = "1,2,3,4,5";
+        let result = validate_input(input)?;
+        assert_eq!(
+            result,
+            vec![
+                Felt::from(1),
+                Felt::from(2),
+                Felt::from(3),
+                Felt::from(4),
+                Felt::from(5)
+            ]
+        );
+        Ok(())
+    }
+    #[test]
+    fn test_validate_input_with_hex() -> Result<(), ProveErrors> {
+        let input = "[0x1,0x2,0x3,0x4,0x5]";
+        let result = validate_input(input)?;
+        assert_eq!(
+            result,
+            vec![
+                Felt::from(1),
+                Felt::from(2),
+                Felt::from(3),
+                Felt::from(4),
+                Felt::from(5)
+            ]
+        );
+        Ok(())
+    }
+    #[test]
+    fn test_validate_input_non_numeric() -> Result<(), ProveErrors> {
+        let input = "[1,2,a,4,5]";
+        let result = validate_input(input);
+        println!("{:?}", result);
+        assert!(result.is_err());
+        Ok(())
+    }
 }

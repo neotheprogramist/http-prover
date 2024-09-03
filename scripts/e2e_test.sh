@@ -1,10 +1,9 @@
-#!/usr/bin/env bash
+# !/usr/bin/env bash
 
 set -eux
-
-IMAGE_NAME="http_prover_test"
-
+IMAGE_NAME="http-prover-test"
 # Check if the image already exists
+podman build -t $IMAGE_NAME .
 if podman images | grep -q "$IMAGE_NAME"; then
     echo "Image $IMAGE_NAME already exists. Skipping build step."
 else
@@ -16,17 +15,24 @@ else
     fi
 fi
 
+KEYGEN_OUTPUT=$(cargo run -p keygen)
+
+PUBLIC_KEY=$(echo "$KEYGEN_OUTPUT" | grep "Public key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
+PRIVATE_KEY=$(echo "$KEYGEN_OUTPUT" | grep "Private key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
+
+KEYGEN_OUTPUT=$(cargo run -p keygen)
+
+ADMIN_PUBLIC_KEY=$(echo "$KEYGEN_OUTPUT" | grep "Public key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
+ADMIN_PRIVATE_KEY=$(echo "$KEYGEN_OUTPUT" | grep "Private key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
+
 podman run -d --replace --name http_prover_test \
-    -p 3040:3000 localhost/http_prover_test \
-    --jwt-secret-key "jwt" \
+    -p 3040:3000 $IMAGE_NAME \
+    --jwt-secret-key "secret" \
     --message-expiration-time 3600 \
     --session-expiration-time 3600 \
-    --authorized-keys 0xed126082726a1062ed6e886b2d7aba42e4f8964a13b4569988bd4c50b9a62076
-if [ $? -ne 0 ]; then
-    echo "Failed to run the image. Exiting."
-    exit 1
-fi
+    --authorized-keys $PUBLIC_KEY,$ADMIN_PUBLIC_KEY \
+    --admin-key $ADMIN_PUBLIC_KEY 
 
-cargo test --no-fail-fast --workspace --verbose -- --test-threads=1
+PRIVATE_KEY=$PRIVATE_KEY PROVER_URL="http://localhost:3040" ADMIN_PRIVATE_KEY=$ADMIN_PRIVATE_KEY cargo test --no-fail-fast --workspace --verbose
 
-podman stop $IMAGE_NAME
+podman stop http_prover_test

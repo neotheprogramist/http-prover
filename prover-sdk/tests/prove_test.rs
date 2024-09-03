@@ -1,0 +1,99 @@
+use common::{
+    cairo0_prover_input::{Cairo0CompiledProgram, Cairo0ProverInput},
+    cairo_prover_input::{CairoCompiledProgram, CairoProverInput},
+};
+use helpers::fetch_job;
+use prover_sdk::{access_key::ProverAccessKey, sdk::ProverSDK};
+use serde_json::Value;
+use starknet_types_core::felt::Felt;
+use url::Url;
+mod helpers;
+
+#[tokio::test]
+async fn test_cairo_prove() {
+    let private_key = std::env::var("PRIVATE_KEY").unwrap();
+    let url = std::env::var("PROVER_URL").unwrap();
+    let access_key = ProverAccessKey::from_hex_string(&private_key).unwrap();
+    let url = Url::parse(&url).unwrap();
+    let sdk = ProverSDK::new(url, access_key).await.unwrap();
+    let program = std::fs::read_to_string("../examples/cairo/fibonacci_compiled.json").unwrap();
+    let program: CairoCompiledProgram = serde_json::from_str(&program).unwrap();
+    let program_input_string = std::fs::read_to_string("../examples/cairo/input.json").unwrap();
+    let mut program_input: Vec<Felt> = Vec::new();
+    for part in program_input_string.split(',') {
+        let felt = Felt::from_dec_str(part).unwrap();
+        program_input.push(felt);
+    }
+    let layout = "recursive".to_string();
+    let data = CairoProverInput {
+        program,
+        layout,
+        program_input,
+    };
+    let job = sdk.prove_cairo(data).await.unwrap();
+    let result = fetch_job(sdk.clone(), job).await;
+    let job = sdk.clone().verify(result).await.unwrap();
+    let result = fetch_job(sdk.clone(), job).await;
+    assert_eq!("true", result);
+}
+
+#[tokio::test]
+async fn test_cairo0_prove() {
+    let private_key = std::env::var("PRIVATE_KEY").unwrap();
+    let url = std::env::var("PROVER_URL").unwrap();
+    let access_key = ProverAccessKey::from_hex_string(&private_key).unwrap();
+    let url = Url::parse(&url).unwrap();
+    let sdk = ProverSDK::new(url, access_key).await.unwrap();
+    let program = std::fs::read_to_string("../examples/cairo0/fibonacci_compiled.json").unwrap();
+    let program: Cairo0CompiledProgram = serde_json::from_str(&program).unwrap();
+    let program_input_string = std::fs::read_to_string("../examples/cairo0/input.json").unwrap();
+    let program_input: Value = serde_json::from_str(&program_input_string).unwrap();
+    let layout = "recursive".to_string();
+    let data = Cairo0ProverInput {
+        program,
+        layout,
+        program_input,
+    };
+    let job = sdk.prove_cairo0(data).await.unwrap();
+    let result = fetch_job(sdk.clone(), job).await;
+    let job = sdk.clone().verify(result).await.unwrap();
+    let result = fetch_job(sdk.clone(), job).await;
+    assert_eq!("true", result);
+}
+#[tokio::test]
+async fn test_cairo_multi_prove() {
+    let private_key = std::env::var("PRIVATE_KEY").unwrap();
+    let url = std::env::var("PROVER_URL").unwrap();
+    let access_key = ProverAccessKey::from_hex_string(&private_key).unwrap();
+    let url = Url::parse(&url).unwrap();
+    let sdk = ProverSDK::new(url, access_key).await.unwrap();
+    let program = std::fs::read_to_string("../examples/cairo/fibonacci_compiled.json").unwrap();
+    let program: CairoCompiledProgram = serde_json::from_str(&program).unwrap();
+    let program_input_string = std::fs::read_to_string("../examples/cairo/input.json").unwrap();
+    let mut program_input: Vec<Felt> = Vec::new();
+    for part in program_input_string.split(',') {
+        let felt = Felt::from_dec_str(part).unwrap();
+        program_input.push(felt);
+    }
+    let layout = "recursive".to_string();
+    let data = CairoProverInput {
+        program,
+        layout,
+        program_input,
+    };
+    let job1 = sdk.prove_cairo(data.clone()).await.unwrap();
+    let job2 = sdk.prove_cairo(data.clone()).await.unwrap();
+    let job3 = sdk.prove_cairo(data.clone()).await.unwrap();
+    let result = fetch_job(sdk.clone(), job1).await;
+    let job = sdk.clone().verify(result).await.unwrap();
+    let result = fetch_job(sdk.clone(), job).await;
+    assert_eq!("true", result);
+    let result = fetch_job(sdk.clone(), job2).await;
+    let job = sdk.clone().verify(result).await.unwrap();
+    let result = fetch_job(sdk.clone(), job).await;
+    assert_eq!("true", result);
+    let result = fetch_job(sdk.clone(), job3).await;
+    let job = sdk.clone().verify(result).await.unwrap();
+    let result = fetch_job(sdk.clone(), job).await;
+    assert_eq!("true", result);
+}

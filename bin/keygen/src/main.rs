@@ -1,5 +1,7 @@
+use prover_sdk::access_key::ProverAccessKey;
+
 fn main() {
-    let key = prover_sdk::ProverAccessKey::generate();
+    let key = ProverAccessKey::generate();
     println!(
         "Public key:  {}, provide it to the server operator.",
         key.verifying_key_as_hex_string()

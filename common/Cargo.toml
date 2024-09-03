@@ -1,0 +1,11 @@
+[package]
+name = "common"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+ed25519-dalek.workspace = true
+starknet-types-core.workspace = true

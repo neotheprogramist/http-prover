@@ -40,10 +40,6 @@ RUN rm -rf cairo
 RUN pip install cairo-lang==0.13.1
 RUN pip install sympy==1.12.1
 
-RUN mkdir resources/
-RUN mkdir resources/cairo/
-RUN mkdir resources/cairoZero/
-
 EXPOSE 3000
 
 ENTRYPOINT [ "prover" ]
