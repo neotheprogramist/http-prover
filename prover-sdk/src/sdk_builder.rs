@@ -155,12 +155,12 @@ impl ProverSDKBuilder {
 
         Ok(ProverSDK {
             client,
-            prover_cairo0: self.base_url.join("/prove/cairo0")?,
-            prover_cairo: self.base_url.join("/prove/cairo")?,
-            verify: self.base_url.join("/verify")?,
-            get_job: self.base_url.join("/get-job")?,
-            register: self.base_url.join("/register")?,
-            sse: self.base_url.join("/sse")?,
+            prover_cairo0: self.base_url.join("prove/cairo0")?,
+            prover_cairo: self.base_url.join("prove/cairo")?,
+            verify: self.base_url.join("verify")?,
+            get_job: self.base_url.join("get-job")?,
+            register: self.base_url.join("register")?,
+            sse: self.base_url.join("sse")?,
             authority: signing_key,
         })
     }
