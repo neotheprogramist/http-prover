@@ -53,6 +53,8 @@ pub struct Args {
     pub prover_access_key: String,
     #[arg(long, env, default_value = "false")]
     pub wait: bool,
+    #[arg(long, env, default_value = "false")]
+    pub sse: bool,
 }
 
 fn validate_input(input: &str) -> Result<Vec<Felt>, ProveErrors> {

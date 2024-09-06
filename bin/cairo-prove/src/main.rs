@@ -1,6 +1,9 @@
 use cairo_prove::errors::ProveErrors;
 use cairo_prove::prove::prove;
-use cairo_prove::{fetch::fetch_job, Args};
+use cairo_prove::{
+    fetch::{fetch_job_polling, fetch_job_sse},
+    Args,
+};
 use clap::Parser;
 use prover_sdk::access_key::ProverAccessKey;
 use prover_sdk::sdk::ProverSDK;
@@ -12,9 +15,14 @@ pub async fn main() -> Result<(), ProveErrors> {
     let sdk = ProverSDK::new(args.prover_url.clone(), access_key).await?;
     let job = prove(args.clone(), sdk.clone()).await?;
     if args.wait {
-        let job = fetch_job(sdk, job).await?;
+        let job = if args.sse {
+            fetch_job_sse(sdk, job).await?
+        } else {
+            fetch_job_polling(sdk, job).await?
+        };
         let path: std::path::PathBuf = args.program_output;
         std::fs::write(path, job)?;
     }
+
     Ok(())
 }
