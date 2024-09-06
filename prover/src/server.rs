@@ -96,6 +96,9 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
 
     trace!("Listening on {}", address);
 
+    let keys = args.authorized_keys.clone();
+    trace!("provided public keys {:?}", keys);
+
     serve(listener, app)
         .with_graceful_shutdown(shutdown_signal(app_state.thread_pool))
         .await?;
