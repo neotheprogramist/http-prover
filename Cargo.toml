@@ -41,6 +41,6 @@ rand = "0.8.5"
 ed25519-dalek = { version = "2.1.1", features = ["rand_core", "serde"] }
 chrono = "0.4.38"
 base64 = "0.22.1"
-starknet-types-core = { git = "https://github.com/neotheprogramist/types-rs.git", branch = "fix/2-types" }
+starknet-types-core = "~0.1.4"
 futures = "0.3.30"
 async-stream = "0.3.5"

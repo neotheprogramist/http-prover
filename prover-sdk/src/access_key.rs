@@ -2,7 +2,7 @@ use ed25519_dalek::SigningKey;
 
 use crate::errors::SdkErrors;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProverAccessKey(pub SigningKey);
 
 impl ProverAccessKey {
