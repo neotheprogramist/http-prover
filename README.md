@@ -2,6 +2,18 @@
 
 This repository contains a comprehensive toolset for proving computations using the Cairo language. The repository includes a server, an SDK for interacting with the server, a binary `cairo-prove` for executing proofs, and helper binaries such as `keygen` and `register`.
 
+## Pipeline for Key Generation and Proving
+
+1. **Generate Public and Private Keys**:
+   - Start by generating a pair of cryptographic keys (public and private) using an appropriate library or tool. This step ensures secure communication and validation in future steps.
+
+2. **Start the Server / Send Public Key to Server Operator**:
+   - Once the keys are generated, the **public key** is sent to the server or server operator to register and authenticate the user/device/app. This allows the server to verify the authenticity of the data coming from the client.
+   - The **private key** remains securely stored on the client side and should never be shared.
+
+3. **Use Cairo-Prove Binary or SDK for Proving**:
+   - Use either the **Cairo-Prove binary** or integrate **SDK** into your app. These tools will send compiled programs and input to server, which will return job id, which can be fetched, by polling or by using **SSE** endopint
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -84,4 +96,3 @@ Helper scripts are included in the `scripts` directory for tasks like running en
 ## Getting Started
 
 To get started with the Cairo Proving System, please refer to the individual READMEs linked above for detailed instructions on building, configuring, and running each component.
-

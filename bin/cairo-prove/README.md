@@ -40,6 +40,7 @@ cargo install --git https://github.com/cartridge-gg/http-prover.git cairo-prove
 `--prover-access-key` (PROVER_ACCESS_KEY): Provides the access key required to authenticate with the prover service. This argument must be private key in hex format
 
 `--wait` (WAIT, default: false): A flag that determines whether the application should wait for the prover's response synchronously. If set to true, the application will block until the prover completes its task, if set to false it ends and returns job, which can be retrived with `get-job` endpoint
+`--sse ` (SSE, default: false): A flag which determines if we want to poll for result or use SSE endpoint, by default it polls.
 
 Each of these arguments can be set via command-line flags or environment variables, allowing for flexible configuration depending on your deployment environment and needs.
 
@@ -74,8 +75,12 @@ The output of the application depends on --wait flag,it can be job id or the gen
 
 **Basic Example:**
 
-To generate a proof from an input file and print the result to the console:
+To generate a proof from an input file and save proof to output file
 
 ```bash
-cairo-prove --prover-url http://localhost:3000 --layout recursive --program-path examples/cairo/fibonacci_compiled.json --program-input-path examples/cairo/input.json --wait --program-output proof.json --prover-access-key 0xf5061793648ab019cc27d6c9a2bd8a2b651f9224ae9ae2c0990fd32ed2172f48
+cairo-prove --prover-url http://localhost:3000 --layout recursive --program-path examples/cairo/fibonacci_compiled.json --program-input-path examples/cairo/input.json --wait --program-output proof.json --prover-access-key 0xf5061793648ab019cc27d6c9a2bd8a2b651f9224ae9ae2c0990fd32ed2172f48 --sse
+```
+Or alternatively
+```bash
+cargo run -p cairo-prove -- --prover-url http://localhost:3000 --layout recursive --program-path examples/cairo/fibonacci_compiled.json --program-input-path examples/cairo/input.json --wait --program-output proof.json --prover-access-key 0xf5061793648ab019cc27d6c9a2bd8a2b651f9224ae9ae2c0990fd32ed2172f48 --sse
 ```

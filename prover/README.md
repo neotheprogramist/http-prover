@@ -7,8 +7,12 @@ The Cairo Proving Server is the core component responsible for managing and veri
 
 Here is an example of running the server with custom settings:
 
+**Note: Using podman with Dockerfile instead of cargo run -p prover is important because it ensures that all necessary binaries and dependencies are bundled within a container.**
+You can run it with cargo run -p prover but its neccesery to have all binaries used in server crate. It's highly recommended to use Dockerfile.
 ```sh
-cairo-prover-server   --host 127.0.0.1   --port 8080   --message-expiration-time 7200   --session-expiration-time 14400   --jwt-secret-key "my_super_secret_key"   --authorized-keys-path /path/to/authorized_keys.json   --authorized-keys key1,key2,key3 --num-workers 8   --admin-key "admin_super_secret_key"
+podman build . -t http-prover
+
+podman run --replace --name http-prover -p 8080:3000 http-prover --host 127.0.0.1   --port 8080   --message-expiration-time 7200   --session-expiration-time 14400 --jwt-secret-key "my_super_secret_key" --authorized-keys-path /path/to/authorized_keys.json --authorized-keys key1,key2,key3 --num-workers 2 --admin-key "admin_super_secret_key"
 ```
 ## Command-Line Options
 
@@ -122,7 +126,7 @@ In this example, the server is configured to:
 - Use a session expiration time of `14400` seconds.
 - Sign JWTs with the provided `jwt-secret-key`.
 - Load authorized keys from the specified file path and directly from the command line.
-- Use `8` worker threads.
+- Use `2` worker threads.
 - Use the provided `admin-key` for administrative tasks.
 
 ## Environment Variables
