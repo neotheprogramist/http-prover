@@ -73,7 +73,7 @@ pub async fn prove(
         }
     }
 
-    generate(public_input_file.clone(), params_file.clone());
+    generate(public_input_file.clone(), params_file.clone())?;
 
     let mut command_proof = Command::new("cpu_air_prover");
     command_proof
@@ -140,10 +140,18 @@ pub async fn cairo0_run(
         .arg("--program_input")
         .arg(&program_input_path)
         .arg("--program")
-        .arg(&program_path);
+        .arg(&program_path)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
 
-    let mut child = command.spawn()?;
-    let _status = child.wait().await?;
+    let child = command.spawn()?;
+    let output = child.wait_with_output().await?;
+
+    // Capture stderr in case of an error
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(ProverError::CustomError(stderr.into()));
+    }
     Ok(())
 }
 pub async fn cairo_run(
@@ -170,10 +178,18 @@ pub async fn cairo_run(
         .arg(&private_input_file)
         .arg("--args_file")
         .arg(&program_input_path)
-        .arg(&program_path);
+        .arg(&program_path)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
 
-    let mut child = command.spawn()?;
-    let _status = child.wait().await?;
+    let child = command.spawn()?;
+    let output = child.wait_with_output().await?;
+
+    // Capture stderr in case of an error
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(ProverError::CustomError(stderr.into()));
+    }
     Ok(())
 }
 pub fn prepare_input(felts: Vec<Felt>) -> Result<String, ProverError> {
