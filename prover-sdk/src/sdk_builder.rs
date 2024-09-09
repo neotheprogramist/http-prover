@@ -31,7 +31,7 @@ impl ProverSDKBuilder {
     }
     pub async fn get_nonce(&self, public_key: &VerifyingKey) -> Result<String, SdkErrors> {
         let nonce_req = GenerateNonceRequest {
-            public_key: serde_json::to_string(&public_key)?,
+            public_key: prefix_hex::encode(public_key.to_bytes()),
         };
         let response = self
             .client

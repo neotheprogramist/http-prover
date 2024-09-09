@@ -1,4 +1,5 @@
 use super::authorizer::AuthorizationProvider;
+use crate::auth::auth_errors::AuthorizerError;
 use crate::server::AppState;
 use crate::{auth::auth_errors::AuthError, errors::ProverError};
 use axum::{
@@ -60,7 +61,9 @@ pub async fn generate_nonce(
     State(state): State<AppState>,
     Query(params): Query<GenerateNonceRequest>,
 ) -> Result<Json<GenerateNonceResponse>, ProverError> {
-    let key: VerifyingKey = serde_json::from_str(&params.public_key)?;
+    let verifying_key_bytes = prefix_hex::decode::<Vec<u8>>(params.public_key)
+        .map_err(|e| AuthorizerError::PrefixHexConversionError(e.to_string()))?;
+    let key = VerifyingKey::from_bytes(&verifying_key_bytes.try_into()?)?;
     if !state.authorizer.is_authorized(key).await? {
         return Err(ProverError::Auth(AuthError::Unauthorized));
     }
