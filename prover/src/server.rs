@@ -68,7 +68,7 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
         jwt_secret_key: args.jwt_secret_key,
         nonces: Arc::new(Mutex::new(HashMap::new())),
         authorizer,
-        job_store: Arc::new(Mutex::new(Vec::new())),
+        job_store: JobStore::default(),
         thread_pool: Arc::new(Mutex::new(ThreadPool::new(args.num_workers))),
         admin_key,
         sse_tx: Arc::new(Mutex::new(sse_tx)),

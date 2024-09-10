@@ -23,13 +23,11 @@ pub async fn sse_handler(
     let mut rx = state.sse_tx.lock().await.subscribe();
     let job_id = params.job_id;
 
-    let job_status = {
-        let jobs = state.job_store.lock().await;
-        jobs.iter()
-            .find(|job| job.id == job_id)
-            .map(|job| job.status.clone())
-            .unwrap_or(JobStatus::Unknown)
-    };
+    let job_status = state
+        .job_store
+        .get_job(job_id)
+        .await
+        .map_or(JobStatus::Unknown, |j| j.status);
 
     let stream = stream! {
         if matches!(job_status.clone(), JobStatus::Completed | JobStatus::Failed) {

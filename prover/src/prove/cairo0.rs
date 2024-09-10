@@ -2,7 +2,6 @@ use crate::auth::jwt::Claims;
 use crate::extractors::workdir::TempDirHandle;
 use crate::server::AppState;
 use crate::threadpool::CairoVersionedInput;
-use crate::utils::job::create_job;
 use axum::Json;
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use common::cairo0_prover_input::Cairo0ProverInput;
@@ -16,7 +15,7 @@ pub async fn root(
 ) -> impl IntoResponse {
     let thread_pool = app_state.thread_pool.clone();
     let job_store = app_state.job_store.clone();
-    let job_id = create_job(&job_store).await;
+    let job_id = job_store.create_job().await;
     let thread = thread_pool.lock().await;
     thread
         .execute(

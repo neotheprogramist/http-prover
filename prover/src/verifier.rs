@@ -1,9 +1,6 @@
 use crate::{
-    auth::jwt::Claims,
-    errors::ProverError,
-    extractors::workdir::TempDirHandle,
-    server::AppState,
-    utils::job::{create_job, update_job_status, JobStore},
+    auth::jwt::Claims, errors::ProverError, extractors::workdir::TempDirHandle, server::AppState,
+    utils::job::JobStore,
 };
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use common::models::JobStatus;
@@ -19,14 +16,17 @@ pub async fn root(
     _claims: Claims,
     Json(proof): Json<String>,
 ) -> impl IntoResponse {
-    let job_id = create_job(&app_state.job_store).await;
     let job_store = app_state.job_store.clone();
+    let job_id = job_store.create_job().await;
+
     tokio::spawn({
         async move {
             if let Err(e) =
                 verify_proof(job_id, job_store.clone(), dir, proof, app_state.sse_tx).await
             {
-                update_job_status(job_id, &job_store, JobStatus::Failed, Some(e.to_string())).await;
+                job_store
+                    .update_job_status(job_id, JobStatus::Failed, Some(e.to_string()))
+                    .await;
             }
         }
     });
@@ -44,7 +44,9 @@ pub async fn verify_proof(
     proof: String,
     sender: Arc<Mutex<Sender<String>>>,
 ) -> Result<(), ProverError> {
-    update_job_status(job_id, &job_store, JobStatus::Running, None).await;
+    job_store
+        .update_job_status(job_id, JobStatus::Running, None)
+        .await;
 
     // Define the path for the proof file
     let path = dir.into_path();
@@ -63,13 +65,13 @@ pub async fn verify_proof(
     std::fs::remove_file(&file)?;
     // Check if the command was successful
 
-    update_job_status(
-        job_id,
-        &job_store,
-        JobStatus::Completed,
-        Some(status.success().to_string()),
-    )
-    .await;
+    job_store
+        .update_job_status(
+            job_id,
+            JobStatus::Completed,
+            Some(status.success().to_string()),
+        )
+        .await;
     let sender = sender.lock().await;
     if sender.receiver_count() > 0 {
         sender
