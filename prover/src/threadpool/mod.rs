@@ -1,5 +1,5 @@
 use crate::{errors::ProverError, threadpool::prove::prove, utils::job::JobStore};
-use common::{cairo0_prover_input::Cairo0ProverInput, cairo_prover_input::CairoProverInput};
+
 use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::{
@@ -8,7 +8,12 @@ use tokio::{
     task::JoinHandle,
 };
 use tracing::trace;
+
 pub mod prove;
+pub mod run;
+
+pub use run::CairoVersionedInput;
+
 type ReceiverType = Arc<
     Mutex<
         mpsc::Receiver<(
@@ -32,10 +37,6 @@ type SenderType = Option<
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: SenderType,
-}
-pub enum CairoVersionedInput {
-    Cairo(CairoProverInput),
-    Cairo0(Cairo0ProverInput),
 }
 
 impl ThreadPool {
