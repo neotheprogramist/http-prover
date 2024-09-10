@@ -3,6 +3,7 @@ use common::{requests::AddKeyRequest, ProverInput};
 use ed25519_dalek::{ed25519::signature::SignerMut, VerifyingKey};
 use futures::StreamExt;
 use reqwest::{Client, Response};
+use serde::Deserialize;
 use url::Url;
 #[derive(Debug, Clone)]
 /// ProverSDK is a struct representing a client for interacting with the Prover service.
@@ -15,6 +16,11 @@ pub struct ProverSDK {
     pub register: Url,
     pub sse: Url,
     pub authority: ProverAccessKey,
+}
+
+#[derive(Deserialize)]
+pub struct JobId {
+    pub job_id: u64,
 }
 
 impl ProverSDK {
@@ -33,21 +39,21 @@ impl ProverSDK {
             .build()
     }
 
-    pub async fn prove_cairo0<T>(&self, data: T) -> Result<String, SdkErrors>
+    pub async fn prove_cairo0<T>(&self, data: T) -> Result<u64, SdkErrors>
     where
         T: ProverInput + Send + 'static,
     {
         self.prove(data, self.prover_cairo0.clone()).await
     }
 
-    pub async fn prove_cairo<T>(&self, data: T) -> Result<String, SdkErrors>
+    pub async fn prove_cairo<T>(&self, data: T) -> Result<u64, SdkErrors>
     where
         T: ProverInput + Send + 'static,
     {
         self.prove(data, self.prover_cairo.clone()).await
     }
 
-    async fn prove<T>(&self, data: T, url: Url) -> Result<String, SdkErrors>
+    async fn prove<T>(&self, data: T, url: Url) -> Result<u64, SdkErrors>
     where
         T: ProverInput + Send + 'static,
     {
@@ -64,18 +70,25 @@ impl ProverSDK {
             return Err(SdkErrors::ProveResponseError(response_data));
         }
         let response_data = response.text().await?;
-
-        Ok(response_data)
+        let job = serde_json::from_str::<JobId>(&response_data)?;
+        Ok(job.job_id)
     }
-    pub async fn verify(self, proof: String) -> Result<String, SdkErrors> {
+    pub async fn verify(self, proof: String) -> Result<u64, SdkErrors> {
         let response = self
             .client
             .post(self.verify.clone())
             .json(&proof)
             .send()
             .await?;
+        if !response.status().is_success() {
+            let response_data: String = response.text().await?;
+            tracing::error!("{}", response_data);
+            return Err(SdkErrors::VerifyResponseError(response_data));
+        }
         let response_data = response.text().await?;
-        Ok(response_data)
+
+        let job = serde_json::from_str::<JobId>(&response_data)?;
+        Ok(job.job_id)
     }
     pub async fn get_job(&self, job_id: u64) -> Result<Response, SdkErrors> {
         let url = format!("{}/{}", self.get_job.clone().as_str(), job_id);

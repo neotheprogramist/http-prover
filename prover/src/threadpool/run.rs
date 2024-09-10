@@ -39,6 +39,7 @@ impl CairoVersionedInput {
     async fn run(&self, paths: &RunPaths<'_>) -> Result<(), ProverError> {
         match self {
             CairoVersionedInput::Cairo(input) => {
+                trace!("Running cairo1-run");
                 let command = paths.cairo1_run_command(&input.layout);
                 command_run(command).await
             }

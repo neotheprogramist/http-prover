@@ -9,7 +9,7 @@ use common::{
 use prover_sdk::sdk::ProverSDK;
 use serde_json::Value;
 
-pub async fn prove(args: Args, sdk: ProverSDK) -> Result<String, ProveErrors> {
+pub async fn prove(args: Args, sdk: ProverSDK) -> Result<u64, ProveErrors> {
     let program = std::fs::read_to_string(&args.program_path)?;
     let proof = match args.cairo_version {
         CairoVersion::V0 => {
