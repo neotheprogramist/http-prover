@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use common::{cairo0_prover_input::Cairo0ProverInput, cairo_prover_input::CairoProverInput};
+use common::prover_input::{Cairo0ProverInput, CairoProverInput};
 use starknet_types_core::felt::Felt;
 use tokio::process::Command;
 use tracing::trace;

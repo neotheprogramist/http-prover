@@ -1,5 +1,8 @@
 use crate::{access_key::ProverAccessKey, errors::SdkErrors, sdk_builder::ProverSDKBuilder};
-use common::{requests::AddKeyRequest, ProverInput};
+use common::{
+    prover_input::{Cairo0ProverInput, CairoProverInput, ProverInput},
+    requests::AddKeyRequest,
+};
 use ed25519_dalek::{ed25519::signature::SignerMut, VerifyingKey};
 use futures::StreamExt;
 use reqwest::{Client, Response};
@@ -39,28 +42,21 @@ impl ProverSDK {
             .build()
     }
 
-    pub async fn prove_cairo0<T>(&self, data: T) -> Result<u64, SdkErrors>
-    where
-        T: ProverInput + Send + 'static,
-    {
-        self.prove(data, self.prover_cairo0.clone()).await
+    pub async fn prove_cairo0(&self, data: Cairo0ProverInput) -> Result<u64, SdkErrors> {
+        self.prove(ProverInput::Cairo0(data), self.prover_cairo0.clone())
+            .await
     }
 
-    pub async fn prove_cairo<T>(&self, data: T) -> Result<u64, SdkErrors>
-    where
-        T: ProverInput + Send + 'static,
-    {
-        self.prove(data, self.prover_cairo.clone()).await
+    pub async fn prove_cairo(&self, data: CairoProverInput) -> Result<u64, SdkErrors> {
+        self.prove(ProverInput::Cairo(data), self.prover_cairo.clone())
+            .await
     }
 
-    async fn prove<T>(&self, data: T, url: Url) -> Result<u64, SdkErrors>
-    where
-        T: ProverInput + Send + 'static,
-    {
+    async fn prove(&self, data: ProverInput, url: Url) -> Result<u64, SdkErrors> {
         let response = self
             .client
             .post(url.clone())
-            .json(&data.serialize())
+            .json(&data.to_json_value())
             .send()
             .await?;
 

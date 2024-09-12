@@ -1,7 +1,4 @@
-use common::{
-    cairo0_prover_input::{Cairo0CompiledProgram, Cairo0ProverInput},
-    cairo_prover_input::{CairoCompiledProgram, CairoProverInput},
-};
+use common::prover_input::*;
 use helpers::fetch_job;
 use prover_sdk::{access_key::ProverAccessKey, sdk::ProverSDK};
 use serde_json::Value;

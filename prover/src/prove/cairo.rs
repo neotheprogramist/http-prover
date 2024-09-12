@@ -4,7 +4,7 @@ use crate::server::AppState;
 use crate::threadpool::CairoVersionedInput;
 use axum::Json;
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
-use common::cairo_prover_input::CairoProverInput;
+use common::prover_input::CairoProverInput;
 use serde_json::json;
 
 pub async fn root(

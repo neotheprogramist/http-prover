@@ -2,10 +2,7 @@ use crate::errors::ProveErrors;
 use crate::validate_input;
 use crate::Args;
 use crate::CairoVersion;
-use common::{
-    cairo0_prover_input::{Cairo0CompiledProgram, Cairo0ProverInput},
-    cairo_prover_input::{CairoCompiledProgram, CairoProverInput},
-};
+use common::prover_input::*;
 use prover_sdk::sdk::ProverSDK;
 use serde_json::Value;
 
