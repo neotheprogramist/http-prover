@@ -68,7 +68,7 @@ impl core::default::Default for Template {
                 fri: StarkFri {
                     fri_step_list: vec![0, 4, 4, 4],
                     last_layer_degree_bound: 128,
-                    n_queries: 8,
+                    n_queries: 16,
                     proof_of_work_bits: 30,
                 },
                 log_n_cosets: 3,
