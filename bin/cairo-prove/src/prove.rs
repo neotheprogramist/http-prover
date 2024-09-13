@@ -2,8 +2,10 @@ use crate::errors::ProveErrors;
 use crate::validate_input;
 use crate::Args;
 use crate::CairoVersion;
-use common::prover_input::*;
 use prover_sdk::sdk::ProverSDK;
+use prover_sdk::{
+    Cairo0CompiledProgram, Cairo0ProverInput, CairoCompiledProgram, CairoProverInput,
+};
 use serde_json::Value;
 
 pub async fn prove(args: Args, sdk: ProverSDK) -> Result<u64, ProveErrors> {
