@@ -3,7 +3,6 @@
 set -eux
 IMAGE_NAME="http-prover-test"
 CONTAINER_ENGINE="${CONTAINER_ENGINE:-docker}"
-
 # Check if the image already exists
 if $CONTAINER_ENGINE images | grep -q "$IMAGE_NAME"; then
     echo "Image $IMAGE_NAME already exists. Skipping build step."
@@ -46,9 +45,16 @@ $CONTAINER_ENGINE run -d --name http_prover_test $REPLACE_FLAG \
     --message-expiration-time 3600 \
     --session-expiration-time 3600 \
     --authorized-keys $PUBLIC_KEY,$ADMIN_PUBLIC_KEY \
-    --admin-key $ADMIN_PUBLIC_KEY
+    --admin-key $ADMIN_PUBLIC_KEY 
+    
+start_time=$(date +%s)
 
 PRIVATE_KEY=$PRIVATE_KEY PROVER_URL="http://localhost:3040" ADMIN_PRIVATE_KEY=$ADMIN_PRIVATE_KEY cargo test --no-fail-fast --workspace --verbose
 
+end_time=$(date +%s)
+
+runtime=$((end_time - start_time))
+
+echo "Total time for running tests: $runtime seconds"
 $CONTAINER_ENGINE stop http_prover_test
 $CONTAINER_ENGINE rm http_prover_test

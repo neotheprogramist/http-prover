@@ -22,6 +22,8 @@ pub async fn prove(args: Args, sdk: ProverSDK) -> Result<u64, ProveErrors> {
                 program: program_serialized,
                 layout: args.layout,
                 program_input,
+                pow_bits: args.pow_bits,
+                n_queries: args.n_queries,
             };
             sdk.prove_cairo0(data).await?
         }
@@ -38,6 +40,8 @@ pub async fn prove(args: Args, sdk: ProverSDK) -> Result<u64, ProveErrors> {
                 program: program_serialized,
                 layout: args.layout,
                 program_input: input,
+                pow_bits: args.pow_bits,
+                n_queries: args.n_queries,
             };
             sdk.prove_cairo(data).await?
         }

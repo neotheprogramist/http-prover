@@ -26,6 +26,8 @@ async fn test_cairo_prove() {
         program,
         layout,
         program_input,
+        n_queries: Some(16),
+        pow_bits: Some(20),
     };
     let job = sdk.prove_cairo(data).await.unwrap();
     let result = fetch_job(sdk.clone(), job).await;
@@ -50,6 +52,8 @@ async fn test_cairo0_prove() {
         program,
         layout,
         program_input,
+        n_queries: Some(16),
+        pow_bits: Some(20),
     };
     let job = sdk.prove_cairo0(data).await.unwrap();
     let result = fetch_job(sdk.clone(), job).await;
@@ -77,6 +81,8 @@ async fn test_cairo_multi_prove() {
         program,
         layout,
         program_input,
+        n_queries: Some(16),
+        pow_bits: Some(20),
     };
     let job1 = sdk.prove_cairo(data.clone()).await.unwrap();
     let job2 = sdk.prove_cairo(data.clone()).await.unwrap();

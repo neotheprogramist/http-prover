@@ -6,6 +6,8 @@ pub struct CairoProverInput {
     pub program: CairoCompiledProgram,
     pub program_input: Vec<Felt>,
     pub layout: String,
+    pub n_queries: Option<u32>,
+    pub pow_bits: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -35,8 +35,16 @@ pub struct Template {
 }
 
 impl Template {
-    pub fn generate_from_public_input_file(file: &PathBuf) -> Result<Self, ProverError> {
-        Self::generate_from_public_input(ProgramPublicInputAsNSteps::read_from_file(file)?)
+    pub fn generate_from_public_input_file(
+        file: &PathBuf,
+        n_queries: Option<u32>,
+        pow_bits: Option<u32>,
+    ) -> Result<Self, ProverError> {
+        Self::generate_from_public_input(
+            ProgramPublicInputAsNSteps::read_from_file(file)?,
+            n_queries,
+            pow_bits,
+        )
     }
     pub fn save_to_file(&self, file: &PathBuf) -> Result<(), ProverError> {
         let json_string = serde_json::to_string_pretty(self)?;
@@ -46,8 +54,16 @@ impl Template {
     }
     fn generate_from_public_input(
         public_input: ProgramPublicInputAsNSteps,
+        n_queries: Option<u32>,
+        pow_bits: Option<u32>,
     ) -> Result<Self, ProverError> {
         let mut template = Self::default();
+        if let Some(pow_bits) = pow_bits {
+            template.stark.fri.proof_of_work_bits = pow_bits;
+        }
+        if let Some(n_queries) = n_queries {
+            template.stark.fri.n_queries = n_queries;
+        }
         let fri_step_list =
             public_input.calculate_fri_step_list(template.stark.fri.last_layer_degree_bound);
         template.stark.fri.fri_step_list = fri_step_list;

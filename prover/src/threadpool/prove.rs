@@ -19,6 +19,8 @@ pub async fn prove(
     dir: TempDir,
     program_input: CairoVersionedInput,
     sse_tx: Arc<Mutex<Sender<String>>>,
+    n_queries: Option<u32>,
+    pow_bits: Option<u32>,
 ) -> Result<(), ProverError> {
     job_store
         .update_job_status(job_id, JobStatus::Running, None)
@@ -29,8 +31,7 @@ pub async fn prove(
     program_input
         .prepare_and_run(&RunPaths::from(&paths))
         .await?;
-
-    Template::generate_from_public_input_file(&paths.public_input_file)?
+    Template::generate_from_public_input_file(&paths.public_input_file, n_queries, pow_bits)?
         .save_to_file(&paths.params_file)?;
 
     let prove_status = paths.prove_command().spawn()?.wait().await?;

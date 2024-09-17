@@ -22,6 +22,8 @@ type ReceiverType = Arc<
             TempDir,
             CairoVersionedInput,
             Arc<Mutex<Sender<String>>>,
+            Option<u32>,
+            Option<u32>,
         )>,
     >,
 >;
@@ -32,8 +34,19 @@ type SenderType = Option<
         TempDir,
         CairoVersionedInput,
         Arc<Mutex<Sender<String>>>,
+        Option<u32>,
+        Option<u32>,
     )>,
 >;
+pub struct ExecuteParams {
+    pub job_id: u64,
+    pub job_store: JobStore,
+    pub dir: TempDir,
+    pub program_input: CairoVersionedInput,
+    pub sse_tx: Arc<Mutex<Sender<String>>>,
+    pub n_queries: Option<u32>,
+    pub pow_bits: Option<u32>,
+}
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: SenderType,
@@ -59,20 +72,21 @@ impl ThreadPool {
         }
     }
 
-    pub async fn execute(
-        &self,
-        job_id: u64,
-        job_store: JobStore,
-        dir: TempDir,
-        program_input: CairoVersionedInput,
-        sse_tx: Arc<Mutex<Sender<String>>>,
-    ) -> Result<(), ProverError> {
+    pub async fn execute(&self, params: ExecuteParams) -> Result<(), ProverError> {
         self.sender
             .as_ref()
             .ok_or(ProverError::CustomError(
                 "Thread pool is shutdown".to_string(),
             ))?
-            .send((job_id, job_store, dir, program_input, sse_tx))
+            .send((
+                params.job_id,
+                params.job_store,
+                params.dir,
+                params.program_input,
+                params.sse_tx,
+                params.n_queries,
+                params.pow_bits,
+            ))
             .await?;
         Ok(())
     }
@@ -107,10 +121,20 @@ impl Worker {
             loop {
                 let message = receiver.lock().await.recv().await;
                 match message {
-                    Some((job_id, job_store, dir, program_input, sse_tx)) => {
+                    Some((job_id, job_store, dir, program_input, sse_tx, n_queries, pow_bits)) => {
                         trace!("Worker {id} got a job; executing.");
 
-                        if let Err(e) = prove(job_id, job_store, dir, program_input, sse_tx).await {
+                        if let Err(e) = prove(
+                            job_id,
+                            job_store,
+                            dir,
+                            program_input,
+                            sse_tx,
+                            n_queries,
+                            pow_bits,
+                        )
+                        .await
+                        {
                             eprintln!("Worker {id} encountered an error: {:?}", e);
                         }
 

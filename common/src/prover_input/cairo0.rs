@@ -5,6 +5,8 @@ pub struct Cairo0ProverInput {
     pub program: Cairo0CompiledProgram,
     pub program_input: serde_json::Value,
     pub layout: String,
+    pub n_queries: Option<u32>,
+    pub pow_bits: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
