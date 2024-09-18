@@ -31,5 +31,5 @@ pub struct Args {
     #[arg(long, env, default_value = "4")]
     pub num_workers: usize,
     #[arg(long, env, value_delimiter = ',')]
-    pub admins_keys: Vec<String>,
+    pub admin_keys: Vec<String>,
 }

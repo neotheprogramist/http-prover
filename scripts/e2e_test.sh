@@ -50,8 +50,8 @@ $CONTAINER_ENGINE run -d --name http_prover_test $REPLACE_FLAG \
     --message-expiration-time 3600 \
     --session-expiration-time 3600 \
     --authorized-keys $PUBLIC_KEY,$ADMIN_PUBLIC_KEY1,$ADMIN_PUBLIC_KEY2 \
-    --admins-keys $ADMIN_PUBLIC_KEY1,$ADMIN_PUBLIC_KEY2 
-    
+    --admin-keys $ADMIN_PUBLIC_KEY1,$ADMIN_PUBLIC_KEY2
+
 start_time=$(date +%s)
 
 PRIVATE_KEY=$PRIVATE_KEY PROVER_URL="http://localhost:3040" ADMIN_PRIVATE_KEY_1=$ADMIN_PRIVATE_KEY1 ADMIN_PRIVATE_KEY_2=$ADMIN_PRIVATE_KEY2 cargo test --no-fail-fast --workspace --verbose

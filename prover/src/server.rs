@@ -34,7 +34,7 @@ pub struct AppState {
     pub jwt_secret_key: String,
     pub nonces: Arc<Mutex<HashMap<NonceString, VerifyingKey>>>,
     pub authorizer: Authorizer,
-    pub admins_keys: Vec<VerifyingKey>,
+    pub admin_keys: Vec<VerifyingKey>,
     pub sse_tx: Arc<Mutex<Sender<String>>>,
 }
 
@@ -49,12 +49,12 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
 
     let authorizer =
         Authorizer::Persistent(FileAuthorizer::new(args.authorized_keys_path.clone()).await?);
-    let mut admins_keys = Vec::new();
-    for key in args.admins_keys {
+    let mut admin_keys = Vec::new();
+    for key in args.admin_keys {
         let verifying_key_bytes = prefix_hex::decode::<Vec<u8>>(key)
             .map_err(|e| AuthorizerError::PrefixHexConversionError(e.to_string()))?;
         let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes.try_into()?)?;
-        admins_keys.push(verifying_key);
+        admin_keys.push(verifying_key);
         authorizer.authorize(verifying_key).await?;
     }
 
@@ -73,7 +73,7 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
         authorizer,
         job_store: JobStore::default(),
         thread_pool: Arc::new(Mutex::new(ThreadPool::new(args.num_workers))),
-        admins_keys,
+        admin_keys,
         sse_tx: Arc::new(Mutex::new(sse_tx)),
     };
 
