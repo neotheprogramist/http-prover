@@ -119,7 +119,7 @@ mod tests {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(1))),
             nonces,
             authorizer: Authorizer::Open,
-            admin_key: generate_verifying_key(&generate_signing_key()),
+            admins_keys: vec![generate_verifying_key(&generate_signing_key())],
             sse_tx: Arc::new(Mutex::new(tokio::sync::broadcast::channel(100).0)),
         };
 
@@ -162,7 +162,7 @@ mod tests {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(1))),
             nonces,
             authorizer: Authorizer::Open,
-            admin_key: generate_verifying_key(&generate_signing_key()),
+            admins_keys: vec![generate_verifying_key(&generate_signing_key())],
             sse_tx: Arc::new(Mutex::new(tokio::sync::broadcast::channel(100).0)),
         };
 
@@ -202,7 +202,7 @@ mod tests {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(1))),
             nonces,
             authorizer: Authorizer::Open,
-            admin_key: generate_verifying_key(&generate_signing_key()),
+            admins_keys: vec![generate_verifying_key(&generate_signing_key())],
             sse_tx: Arc::new(Mutex::new(tokio::sync::broadcast::channel(100).0)),
         };
 
@@ -243,7 +243,7 @@ mod tests {
             thread_pool: Arc::new(Mutex::new(ThreadPool::new(1))),
             nonces,
             authorizer: Authorizer::Open,
-            admin_key: generate_verifying_key(&generate_signing_key()),
+            admins_keys: vec![generate_verifying_key(&generate_signing_key())],
             sse_tx: Arc::new(Mutex::new(tokio::sync::broadcast::channel(100).0)),
         };
 

@@ -69,22 +69,15 @@ impl ProverSDK {
         let job = serde_json::from_str::<JobId>(&response_data)?;
         Ok(job.job_id)
     }
-    pub async fn verify(self, proof: String) -> Result<u64, SdkErrors> {
+    pub async fn verify(self, proof: String) -> Result<String, SdkErrors> {
         let response = self
             .client
             .post(self.verify.clone())
             .json(&proof)
             .send()
             .await?;
-        if !response.status().is_success() {
-            let response_data: String = response.text().await?;
-            tracing::error!("{}", response_data);
-            return Err(SdkErrors::VerifyResponseError(response_data));
-        }
         let response_data = response.text().await?;
-
-        let job = serde_json::from_str::<JobId>(&response_data)?;
-        Ok(job.job_id)
+        Ok(response_data)
     }
     pub async fn get_job(&self, job_id: u64) -> Result<Response, SdkErrors> {
         let url = format!("{}/{}", self.get_job.clone().as_str(), job_id);

@@ -4,10 +4,18 @@ use url::Url;
 #[tokio::test]
 async fn test_register_authorized() {
     let url = std::env::var("PROVER_URL").unwrap();
-    let admin_key = std::env::var("ADMIN_PRIVATE_KEY").unwrap();
-    let admin_key = ProverAccessKey::from_hex_string(&admin_key).unwrap();
+    let admin_key1 = std::env::var("ADMIN_PRIVATE_KEY_1").unwrap();
+    let admin_key2 = std::env::var("ADMIN_PRIVATE_KEY_2").unwrap();
+
+    let admin_key = ProverAccessKey::from_hex_string(&admin_key1).unwrap();
     let random_key = ProverAccessKey::generate();
     let url = Url::parse(&url).unwrap();
+    let mut sdk = ProverSDK::new(url.clone(), admin_key).await.unwrap();
+    sdk.register(random_key.0.verifying_key()).await.unwrap();
+    let new_sdk = ProverSDK::new(url.clone(), random_key).await;
+    assert!(new_sdk.is_ok());
+    let admin_key = ProverAccessKey::from_hex_string(&admin_key2).unwrap();
+    let random_key = ProverAccessKey::generate();
     let mut sdk = ProverSDK::new(url.clone(), admin_key).await.unwrap();
     sdk.register(random_key.0.verifying_key()).await.unwrap();
     let new_sdk = ProverSDK::new(url, random_key).await;

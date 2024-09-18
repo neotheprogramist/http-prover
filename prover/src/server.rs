@@ -7,7 +7,7 @@ use crate::sse::sse_handler;
 use crate::threadpool::ThreadPool;
 use crate::utils::job::{get_job, JobStore};
 use crate::utils::shutdown::shutdown_signal;
-use crate::verifier::root;
+use crate::verifier::verify_proof;
 use crate::{prove, Args};
 use axum::{
     middleware,
@@ -34,7 +34,7 @@ pub struct AppState {
     pub jwt_secret_key: String,
     pub nonces: Arc<Mutex<HashMap<NonceString, VerifyingKey>>>,
     pub authorizer: Authorizer,
-    pub admin_key: VerifyingKey,
+    pub admins_keys: Vec<VerifyingKey>,
     pub sse_tx: Arc<Mutex<Sender<String>>>,
 }
 
@@ -49,12 +49,15 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
 
     let authorizer =
         Authorizer::Persistent(FileAuthorizer::new(args.authorized_keys_path.clone()).await?);
+    let mut admins_keys = Vec::new();
+    for key in args.admins_keys {
+        let verifying_key_bytes = prefix_hex::decode::<Vec<u8>>(key)
+            .map_err(|e| AuthorizerError::PrefixHexConversionError(e.to_string()))?;
+        let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes.try_into()?)?;
+        admins_keys.push(verifying_key);
+        authorizer.authorize(verifying_key).await?;
+    }
 
-    let admin_key_bytes = prefix_hex::decode::<Vec<u8>>(args.admin_key)
-        .map_err(|e| AuthorizerError::PrefixHexConversionError(e.to_string()))?;
-    let admin_key = VerifyingKey::from_bytes(&admin_key_bytes.try_into()?)?;
-
-    authorizer.authorize(admin_key).await?;
     for key in args.authorized_keys.iter() {
         let verifying_key_bytes = prefix_hex::decode::<Vec<u8>>(key)
             .map_err(|e| AuthorizerError::PrefixHexConversionError(e.to_string()))?;
@@ -70,7 +73,7 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
         authorizer,
         job_store: JobStore::default(),
         thread_pool: Arc::new(Mutex::new(ThreadPool::new(args.num_workers))),
-        admin_key,
+        admins_keys,
         sse_tx: Arc::new(Mutex::new(sse_tx)),
     };
 
@@ -80,7 +83,7 @@ pub async fn start(args: Args) -> Result<(), ProverError> {
 
     let app = Router::new()
         .route("/", get(ok_handler))
-        .route("/verify", post(root))
+        .route("/verify", post(verify_proof))
         .route("/get-job/:id", get(get_job))
         .route("/sse", get(sse_handler))
         .with_state(app_state.clone())

@@ -10,7 +10,7 @@ pub async fn register(
     _claims: Claims,
     Json(payload): Json<AddKeyRequest>,
 ) -> Result<impl IntoResponse, ProverError> {
-    if state.admin_key != payload.authority {
+    if !state.admins_keys.contains(&payload.authority) {
         return Err(ProverError::Auth(AuthError::Unauthorized));
     }
     payload

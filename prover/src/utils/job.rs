@@ -4,8 +4,8 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use common::models::JobStatus;
-use serde::Serialize;
+use common::models::{JobStatus, ProverResult};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     sync::Arc,
@@ -13,7 +13,7 @@ use std::{
 };
 use tokio::sync::Mutex;
 
-use crate::{auth::jwt::Claims, server::AppState};
+use crate::{auth::jwt::Claims, errors::ProverError, server::AppState};
 
 #[derive(Clone)]
 pub struct Job {
@@ -23,12 +23,20 @@ pub struct Job {
     pub created: Instant,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum JobResponse {
-    InProgress { id: u64, status: JobStatus },
-    Completed { result: String, status: JobStatus },
-    Failed { error: String },
+    InProgress {
+        id: u64,
+        status: JobStatus,
+    },
+    Completed {
+        result: ProverResult,
+        status: JobStatus,
+    },
+    Failed {
+        error: String,
+    },
 }
 
 #[derive(Default, Clone)]
@@ -99,7 +107,7 @@ pub async fn get_job(
     Path(id): Path<u64>,
     State(app_state): State<AppState>,
     _claims: Claims,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, ProverError> {
     if let Some(job) = app_state.job_store.get_job(id).await {
         let (status, response) = match job.status {
             JobStatus::Pending | JobStatus::Running => (
@@ -113,10 +121,7 @@ pub async fn get_job(
                 StatusCode::OK,
                 Json(JobResponse::Completed {
                     status: job.status.clone(),
-                    result: job
-                        .result
-                        .clone()
-                        .unwrap_or_else(|| "No result available".to_string()),
+                    result: serde_json::from_str(&job.result.clone().unwrap_or_default())?,
                 }),
             ),
             JobStatus::Failed => (
@@ -135,12 +140,8 @@ pub async fn get_job(
                 }),
             ),
         };
-        (status, response).into_response()
+        Ok((status, response).into_response())
     } else {
-        (
-            StatusCode::NOT_FOUND,
-            Json(format!("Job with id {} not found", id)),
-        )
-            .into_response()
+        Err(ProverError::CustomError("Job not found".to_string()))
     }
 }

@@ -2,7 +2,9 @@ use common::prover_input::*;
 use helpers::fetch_job;
 use prover_sdk::{access_key::ProverAccessKey, sdk::ProverSDK};
 use serde_json::Value;
+
 use starknet_types_core::felt::Felt;
+
 use url::Url;
 mod helpers;
 
@@ -31,9 +33,11 @@ async fn test_cairo_prove() {
     };
     let job = sdk.prove_cairo(data).await.unwrap();
     let result = fetch_job(sdk.clone(), job).await;
-    let job = sdk.clone().verify(result).await.unwrap();
-    let result = fetch_job(sdk.clone(), job).await;
-    assert_eq!("true", result);
+    assert!(result.is_some());
+    let result = result.unwrap();
+    let result = sdk.clone().verify(result.proof).await;
+    assert!(result.is_ok(), "Failed to verify proof");
+    assert_eq!("true", result.unwrap());
 }
 
 #[tokio::test]
@@ -57,8 +61,7 @@ async fn test_cairo0_prove() {
     };
     let job = sdk.prove_cairo0(data).await.unwrap();
     let result = fetch_job(sdk.clone(), job).await;
-    let job = sdk.clone().verify(result).await.unwrap();
-    let result = fetch_job(sdk.clone(), job).await;
+    let result = sdk.clone().verify(result.unwrap().proof).await.unwrap();
     assert_eq!("true", result);
 }
 #[tokio::test]
@@ -88,15 +91,12 @@ async fn test_cairo_multi_prove() {
     let job2 = sdk.prove_cairo(data.clone()).await.unwrap();
     let job3 = sdk.prove_cairo(data.clone()).await.unwrap();
     let result = fetch_job(sdk.clone(), job1).await;
-    let job = sdk.clone().verify(result).await.unwrap();
-    let result = fetch_job(sdk.clone(), job).await;
+    let result = sdk.clone().verify(result.unwrap().proof).await.unwrap();
     assert_eq!("true", result);
     let result = fetch_job(sdk.clone(), job2).await;
-    let job = sdk.clone().verify(result).await.unwrap();
-    let result = fetch_job(sdk.clone(), job).await;
+    let result = sdk.clone().verify(result.unwrap().proof).await.unwrap();
     assert_eq!("true", result);
     let result = fetch_job(sdk.clone(), job3).await;
-    let job = sdk.clone().verify(result).await.unwrap();
-    let result = fetch_job(sdk.clone(), job).await;
+    let result = sdk.clone().verify(result.unwrap().proof).await.unwrap();
     assert_eq!("true", result);
 }

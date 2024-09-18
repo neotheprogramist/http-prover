@@ -32,8 +32,13 @@ PRIVATE_KEY=$(echo "$KEYGEN_OUTPUT" | grep "Private key" | awk '{print $3}' | tr
 
 KEYGEN_OUTPUT=$(cargo run -p keygen)
 
-ADMIN_PUBLIC_KEY=$(echo "$KEYGEN_OUTPUT" | grep "Public key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
-ADMIN_PRIVATE_KEY=$(echo "$KEYGEN_OUTPUT" | grep "Private key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
+ADMIN_PUBLIC_KEY1=$(echo "$KEYGEN_OUTPUT" | grep "Public key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
+ADMIN_PRIVATE_KEY1=$(echo "$KEYGEN_OUTPUT" | grep "Private key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
+
+KEYGEN_OUTPUT=$(cargo run -p keygen)
+
+ADMIN_PUBLIC_KEY2=$(echo "$KEYGEN_OUTPUT" | grep "Public key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
+ADMIN_PRIVATE_KEY2=$(echo "$KEYGEN_OUTPUT" | grep "Private key" | awk '{print $3}' | tr -d ',' | tr -d '[:space:]')
 
 REPLACE_FLAG=""
 if [ "$CONTAINER_ENGINE" == "podman" ]; then
@@ -44,12 +49,12 @@ $CONTAINER_ENGINE run -d --name http_prover_test $REPLACE_FLAG \
     --jwt-secret-key "secret" \
     --message-expiration-time 3600 \
     --session-expiration-time 3600 \
-    --authorized-keys $PUBLIC_KEY,$ADMIN_PUBLIC_KEY \
-    --admin-key $ADMIN_PUBLIC_KEY 
+    --authorized-keys $PUBLIC_KEY,$ADMIN_PUBLIC_KEY1,$ADMIN_PUBLIC_KEY2 \
+    --admins-keys $ADMIN_PUBLIC_KEY1,$ADMIN_PUBLIC_KEY2 
     
 start_time=$(date +%s)
 
-PRIVATE_KEY=$PRIVATE_KEY PROVER_URL="http://localhost:3040" ADMIN_PRIVATE_KEY=$ADMIN_PRIVATE_KEY cargo test --no-fail-fast --workspace --verbose
+PRIVATE_KEY=$PRIVATE_KEY PROVER_URL="http://localhost:3040" ADMIN_PRIVATE_KEY_1=$ADMIN_PRIVATE_KEY1 ADMIN_PRIVATE_KEY_2=$ADMIN_PRIVATE_KEY2 cargo test --no-fail-fast --workspace --verbose
 
 end_time=$(date +%s)
 

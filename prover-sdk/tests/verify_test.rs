@@ -13,13 +13,9 @@ async fn test_verify_invalid_proof() {
     let access_key = ProverAccessKey::from_hex_string(&private_key).unwrap();
     let url = Url::parse(&url).unwrap();
     let sdk = ProverSDK::new(url, access_key).await.unwrap();
-    let job = sdk
-        .clone()
-        .verify("invalid_proof".to_string())
-        .await
-        .unwrap();
-    let result = fetch_job(sdk.clone(), job).await;
-    assert_eq!("false", result);
+    let result = sdk.clone().verify("wrong proof".to_string()).await;
+    assert!(result.is_ok(), "Failed to verify proof");
+    assert_eq!("false", result.unwrap());
 }
 
 #[tokio::test]
@@ -47,7 +43,9 @@ async fn test_verify_valid_proof() {
     };
     let job = sdk.clone().prove_cairo(data).await.unwrap();
     let result = fetch_job(sdk.clone(), job).await;
-    let job = sdk.clone().verify(result).await.unwrap();
-    let result = fetch_job(sdk.clone(), job).await;
-    assert_eq!("true", result);
+    assert!(result.is_some());
+    let result = result.unwrap();
+    let result = sdk.clone().verify(result.proof).await;
+    assert!(result.is_ok(), "Failed to verify proof");
+    assert_eq!("true", result.unwrap());
 }

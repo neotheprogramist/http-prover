@@ -1,13 +1,17 @@
 use super::run::RunPaths;
 use super::CairoVersionedInput;
 use crate::errors::ProverError;
+use crate::utils::proof_parser::{
+    extract_program_hash, extract_program_output, program_output_hash,
+};
 use crate::utils::{config::Template, job::JobStore};
-use common::models::JobStatus;
+use common::models::{JobStatus, ProverResult};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
+use swiftness_proof_parser::{json_parser, stark_proof};
 use tempfile::TempDir;
 use tokio::process::Command;
 use tokio::sync::broadcast::Sender;
@@ -41,8 +45,13 @@ pub async fn prove(
     let sender = sse_tx.lock().await;
 
     if prove_status.success() {
+        let prover_result = prover_result(final_result)?;
         job_store
-            .update_job_status(job_id, JobStatus::Completed, Some(final_result))
+            .update_job_status(
+                job_id,
+                JobStatus::Completed,
+                serde_json::to_string_pretty(&prover_result).ok(),
+            )
             .await;
         if sender.receiver_count() > 0 {
             sender
@@ -60,6 +69,21 @@ pub async fn prove(
         }
     }
     Ok(())
+}
+
+fn prover_result(final_result: String) -> Result<ProverResult, ProverError> {
+    let proof_json = serde_json::from_str::<json_parser::StarkProof>(&final_result)?;
+    let stark_proof = stark_proof::StarkProof::try_from(proof_json)?;
+    let program_hash = extract_program_hash(stark_proof.clone());
+    let program_output = extract_program_output(stark_proof.clone());
+    let program_output_hash = program_output_hash(program_output.clone());
+    let prover_result = ProverResult {
+        proof: final_result.clone(),
+        program_hash,
+        program_output,
+        program_output_hash,
+    };
+    Ok(prover_result)
 }
 
 #[derive(Debug, Clone)]

@@ -21,8 +21,7 @@ pub async fn main() -> Result<(), ProveErrors> {
             fetch_job_polling(sdk, job).await?
         };
         let path: std::path::PathBuf = args.program_output;
-        std::fs::write(path, job)?;
+        std::fs::write(path, serde_json::to_string_pretty(&job)?)?;
     }
-
     Ok(())
 }
