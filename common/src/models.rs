@@ -23,6 +23,7 @@ pub enum JobStatus {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ProverResult {
     pub proof: String,
+    pub serialized_proof: Vec<Felt>,
     pub program_hash: Felt,
     pub program_output: Vec<Felt>,
     pub program_output_hash: Felt,

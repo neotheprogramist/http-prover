@@ -35,6 +35,24 @@ async fn test_cairo_prove() {
     let result = fetch_job(sdk.clone(), job).await;
     assert!(result.is_some());
     let result = result.unwrap();
+
+    //Values calculated using https://github.com/HerodotusDev/integrity
+    assert_eq!(result.serialized_proof.len(), 2533);
+    assert_eq!(
+        result.program_hash,
+        Felt::from_dec_str(
+            "2251972324230578422543092394494031242690791181195034520556584290316798249271"
+        )
+        .unwrap()
+    );
+    assert_eq!(result.program_output.len(), 7);
+    assert_eq!(
+        result.program_output_hash,
+        Felt::from_dec_str(
+            "2144555888719052742880342011775786530333616377198088482005787934731079204155"
+        )
+        .unwrap()
+    );
     let result = sdk.clone().verify(result.proof).await;
     assert!(result.is_ok(), "Failed to verify proof");
     assert_eq!("true", result.unwrap());
@@ -61,7 +79,28 @@ async fn test_cairo0_prove() {
     };
     let job = sdk.prove_cairo0(data).await.unwrap();
     let result = fetch_job(sdk.clone(), job).await;
-    let result = sdk.clone().verify(result.unwrap().proof).await.unwrap();
+    assert!(result.is_some());
+    let result = result.unwrap();
+
+    //Values calculated using https://github.com/HerodotusDev/integrity
+    assert_eq!(result.serialized_proof.len(), 2370);
+    assert_eq!(
+        result.program_hash,
+        Felt::from_dec_str(
+            "3470677812397724434300536580370163457237813256743569044140337948140729574027"
+        )
+        .unwrap()
+    );
+    assert_eq!(result.program_output.len(), 2);
+    assert_eq!(
+        result.program_output_hash,
+        Felt::from_dec_str(
+            "2736399355406991235942465207827961599881564213022637607206006880098495172292"
+        )
+        .unwrap()
+    );
+
+    let result = sdk.clone().verify(result.proof).await.unwrap();
     assert_eq!("true", result);
 }
 #[tokio::test]

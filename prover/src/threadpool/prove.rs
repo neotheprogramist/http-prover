@@ -1,17 +1,17 @@
 use super::run::RunPaths;
 use super::CairoVersionedInput;
 use crate::errors::ProverError;
-use crate::utils::proof_parser::{
-    extract_program_hash, extract_program_output, program_output_hash,
-};
 use crate::utils::{config::Template, job::JobStore};
+use cairo_proof_parser::json_parser::proof_from_annotations;
+use cairo_proof_parser::output::ExtractOutputResult;
+use cairo_proof_parser::program::{CairoVersion, ExtractProgramResult};
+use cairo_proof_parser::{self, ProofJSON};
 use common::models::{JobStatus, ProverResult};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use swiftness_proof_parser::{json_parser, stark_proof};
 use tempfile::TempDir;
 use tokio::process::Command;
 use tokio::sync::broadcast::Sender;
@@ -45,7 +45,14 @@ pub async fn prove(
     let sender = sse_tx.lock().await;
 
     if prove_status.success() {
-        let prover_result = prover_result(final_result)?;
+        let prover_result = match program_input {
+            CairoVersionedInput::Cairo(_cairo_input) => {
+                prover_result(final_result, CairoVersion::Cairo)?
+            }
+            CairoVersionedInput::Cairo0(_cairo0_input) => {
+                prover_result(final_result, CairoVersion::Cairo0)?
+            }
+        };
         job_store
             .update_job_status(
                 job_id,
@@ -71,17 +78,25 @@ pub async fn prove(
     Ok(())
 }
 
-fn prover_result(final_result: String) -> Result<ProverResult, ProverError> {
-    let proof_json = serde_json::from_str::<json_parser::StarkProof>(&final_result)?;
-    let stark_proof = stark_proof::StarkProof::try_from(proof_json)?;
-    let program_hash = extract_program_hash(stark_proof.clone());
-    let program_output = extract_program_output(stark_proof.clone());
-    let program_output_hash = program_output_hash(program_output.clone());
+fn prover_result(proof: String, cairo_version: CairoVersion) -> Result<ProverResult, ProverError> {
+    let proof_json = serde_json::from_str::<ProofJSON>(&proof)?;
+    let proof_from_annotations = proof_from_annotations(proof_json)?;
+    let ExtractProgramResult { program_hash, .. } = if cairo_version == CairoVersion::Cairo0 {
+        proof_from_annotations.extract_program(CairoVersion::Cairo0)?
+    } else {
+        proof_from_annotations.extract_program(CairoVersion::Cairo)?
+    };
+    let ExtractOutputResult {
+        program_output,
+        program_output_hash,
+    } = proof_from_annotations.extract_output()?;
+    let serialized_proof = proof_from_annotations.to_felts();
     let prover_result = ProverResult {
-        proof: final_result.clone(),
+        proof: proof.clone(),
         program_hash,
         program_output,
         program_output_hash,
+        serialized_proof,
     };
     Ok(prover_result)
 }

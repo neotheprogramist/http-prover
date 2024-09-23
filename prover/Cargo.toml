@@ -27,6 +27,6 @@ base64.workspace = true
 starknet-types-core.workspace = true
 futures.workspace = true
 async-stream.workspace = true
-swiftness_proof_parser.workspace = true
+cairo-proof-parser.workspace = true
 starknet-crypto.workspace = true
 anyhow.workspace = true
