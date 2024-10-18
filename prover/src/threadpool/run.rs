@@ -1,11 +1,12 @@
 use std::{fs, path::PathBuf};
 
+use cairo_vm::types::layout_name::LayoutName;
 use common::prover_input::{Cairo0ProverInput, CairoProverInput};
 use starknet_types_core::felt::Felt;
 use tokio::process::Command;
 use tracing::trace;
 
-use crate::errors::ProverError;
+use crate::{cairo1_run::run_cairo_program, errors::ProverError};
 
 use super::prove::ProvePaths;
 pub enum CairoVersionedInput {
@@ -40,8 +41,27 @@ impl CairoVersionedInput {
         match self {
             CairoVersionedInput::Cairo(input) => {
                 trace!("Running cairo1-run");
-                let command = paths.cairo1_run_command(&input.layout);
-                command_run(command).await
+                for path in &[
+                    paths.trace_file,
+                    paths.memory_file,
+                    paths.public_input_file,
+                    paths.private_input_file,
+                    paths.program_input_path,
+                    paths.program,
+                ] {
+                    std::fs::File::create(path)?;
+                }
+                let program_json =
+                    serde_json::from_value(serde_json::to_value(input.program.clone())?)?;
+                run_cairo_program(
+                    program_json,
+                    LayoutName::recursive,
+                    input.program_input.clone(),
+                    paths,
+                )
+                .unwrap(); //change this line to use layout type instead of string
+                println!("Finished running cairo program");
+                Ok(())
             }
             CairoVersionedInput::Cairo0(input) => {
                 trace!("Running cairo0-run");
@@ -53,34 +73,15 @@ impl CairoVersionedInput {
 }
 
 pub struct RunPaths<'a> {
-    trace_file: &'a PathBuf,
-    memory_file: &'a PathBuf,
-    public_input_file: &'a PathBuf,
-    private_input_file: &'a PathBuf,
-    program_input_path: &'a PathBuf,
-    program: &'a PathBuf,
+    pub trace_file: &'a PathBuf,
+    pub memory_file: &'a PathBuf,
+    pub public_input_file: &'a PathBuf,
+    pub private_input_file: &'a PathBuf,
+    pub program_input_path: &'a PathBuf,
+    pub program: &'a PathBuf,
 }
 
 impl RunPaths<'_> {
-    pub fn cairo1_run_command(&self, layout: &str) -> Command {
-        let mut command = Command::new("cairo1-run");
-        command
-            .arg("--trace_file")
-            .arg(self.trace_file)
-            .arg("--memory_file")
-            .arg(self.memory_file)
-            .arg("--layout")
-            .arg(layout)
-            .arg("--proof_mode")
-            .arg("--air_public_input")
-            .arg(self.public_input_file)
-            .arg("--air_private_input")
-            .arg(self.private_input_file)
-            .arg("--args_file")
-            .arg(self.program_input_path)
-            .arg(self.program);
-        command
-    }
     pub fn cairo0_run_command(&self, layout: &str) -> Command {
         let mut command = Command::new("cairo-run");
         command
@@ -126,7 +127,7 @@ impl<'a> From<&'a ProvePaths> for RunPaths<'a> {
     }
 }
 
-async fn command_run(mut command: Command) -> Result<(), ProverError> {
+pub async fn command_run(mut command: Command) -> Result<(), ProverError> {
     command
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
