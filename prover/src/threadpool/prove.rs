@@ -16,6 +16,7 @@ use tempfile::TempDir;
 use tokio::process::Command;
 use tokio::sync::broadcast::Sender;
 use tokio::sync::Mutex;
+use tracing::trace;
 
 pub async fn prove(
     job_id: u64,
@@ -102,16 +103,16 @@ fn prover_result(proof: String, cairo_version: CairoVersion) -> Result<ProverRes
 }
 
 #[derive(Debug, Clone)]
-pub(super) struct ProvePaths {
-    pub(super) program_input: PathBuf,
-    pub(super) program: PathBuf,
-    pub(super) proof_path: PathBuf,
-    pub(super) trace_file: PathBuf,
-    pub(super) memory_file: PathBuf,
-    pub(super) public_input_file: PathBuf,
-    pub(super) private_input_file: PathBuf,
-    pub(super) params_file: PathBuf,
-    pub(super) config_file: PathBuf,
+pub struct ProvePaths {
+    pub program_input: PathBuf,
+    pub program: PathBuf,
+    pub proof_path: PathBuf,
+    pub trace_file: PathBuf,
+    pub memory_file: PathBuf,
+    pub public_input_file: PathBuf,
+    pub private_input_file: PathBuf,
+    pub params_file: PathBuf,
+    pub config_file: PathBuf,
 }
 
 impl ProvePaths {
@@ -130,6 +131,7 @@ impl ProvePaths {
         }
     }
     pub fn prove_command(&self) -> Command {
+        trace!("Prover command");
         let mut command = Command::new("cpu_air_prover");
         command
             .arg("--out_file")
