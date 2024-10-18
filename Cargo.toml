@@ -48,14 +48,18 @@ reqwest = { version = "0.12.7", features = [
     "stream",
 ], default-features = false }
 
+cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm.git", features = [
+    "cairo-1-hints",
+], rev = "93f1f54" }
+bootloader_cairo-vm = { package = "cairo-vm", git = "https://github.com/Moonsong-Labs/cairo-vm", rev = "e0a4653aa5634664a3f792b38715a572e9f89b44", features = [
+    # "cairo-1-hints",
+    "extensive_hints",
+] }
 serde = { version = "1.0.209", features = ["derive"] }
 tokio = { version = "1.39.3", features = ["full"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 cairo-lang-sierra-type-size = { version = "2.7.0", default-features = false }
 cairo-lang-sierra-ap-change = { version = "2.7.0", default-features = false }
-cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm.git", features = [
-    "cairo-1-hints",
-],rev = "93f1f54" }
 num-bigint = { version = "0.4", default-features = false, features = [
     "serde",
     "rand",
@@ -67,3 +71,6 @@ cairo-lang-sierra-to-casm = { version = "2.7.0", default-features = false }
 cairo-lang-sierra = { version = "2.7.0", default-features = false }
 cairo-lang-utils = { version = "2.7.0", default-features = false }
 itertools = "0.12.1"
+
+stone-prover-sdk = { git = "https://github.com/Moonsong-Labs/stone-prover-sdk", rev = "ed0499407dc0374c23eca373d88eb3465e15583b" }
+madara-prover-rpc-server = { git = "https://github.com/Moonsong-Labs/madara-prover-api", rev = "5537a04c65800772167f233e99706ebe69178dc8" }

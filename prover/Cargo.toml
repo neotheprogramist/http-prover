@@ -33,15 +33,19 @@ anyhow.workspace = true
 cairo-vm.workspace = true
 cairo-lang-sierra.workspace = true
 
+bootloader_cairo-vm.workspace = true
 cairo-lang-sierra-type-size.workspace = true
-cairo-lang-sierra-ap-change.workspace =true
-num-bigint.workspace =true
-num-traits.workspace =true
-cairo-lang-casm.workspace =true
-cairo-lang-starknet-classes.workspace =true
-cairo-lang-sierra-to-casm.workspace =true
-cairo-lang-utils.workspace =true
-itertools.workspace =true
+cairo-lang-sierra-ap-change.workspace = true
+num-bigint.workspace = true
+num-traits.workspace = true
+cairo-lang-casm.workspace = true
+cairo-lang-starknet-classes.workspace = true
+cairo-lang-sierra-to-casm.workspace = true
+cairo-lang-utils.workspace = true
+itertools.workspace = true
 bincode = { version = "2.0.0-rc.3", default-features = false, features = [
     "serde",
 ] }
+
+stone-prover-sdk.workspace = true
+madara-prover-rpc-server.workspace = true

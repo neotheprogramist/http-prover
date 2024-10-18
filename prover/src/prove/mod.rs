@@ -1,6 +1,7 @@
 use axum::{routing::post, Router};
 
 use crate::server::AppState;
+mod bootloader;
 mod cairo;
 mod cairo0;
 
