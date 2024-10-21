@@ -53,6 +53,7 @@ pub async fn prove(
             CairoVersionedInput::Cairo0(_cairo0_input) => {
                 prover_result(final_result, CairoVersion::Cairo0)?
             }
+            CairoVersionedInput::Pie(_pie) => prover_result(final_result, CairoVersion::Cairo0)?,
         };
         job_store
             .update_job_status(

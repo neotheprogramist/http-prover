@@ -1,17 +1,24 @@
 use std::{fs, path::PathBuf};
 
+use crate::{cairo1_run::run_cairo_program, errors::ProverError};
+use bootloader_cairo_vm::{
+    hint_processor::builtin_hint_processor::bootloader::types::{Task, TaskSpec},
+    types::program::Program,
+    vm::runners::cairo_pie::CairoPie,
+};
 use cairo_vm::types::layout_name::LayoutName;
-use common::prover_input::{Cairo0ProverInput, CairoProverInput};
+use common::prover_input::{Cairo0ProverInput, CairoProverInput, PieProverInput};
+use madara_prover_rpc_server::services::starknet_prover::run_bootloader_in_proof_mode;
 use starknet_types_core::felt::Felt;
+use stone_prover_sdk::json::write_json_to_file;
 use tokio::process::Command;
 use tracing::trace;
-
-use crate::{cairo1_run::run_cairo_program, errors::ProverError};
 
 use super::prove::ProvePaths;
 pub enum CairoVersionedInput {
     Cairo(CairoProverInput),
     Cairo0(Cairo0ProverInput),
+    Pie(PieProverInput),
 }
 
 impl CairoVersionedInput {
@@ -34,6 +41,7 @@ impl CairoVersionedInput {
                 )?;
                 fs::write(paths.program, serde_json::to_string(&input.program)?)?;
             }
+            CairoVersionedInput::Pie(_input) => {}
         }
         Ok(())
     }
@@ -67,6 +75,37 @@ impl CairoVersionedInput {
                 trace!("Running cairo0-run");
                 let command = paths.cairo0_run_command(&input.layout);
                 command_run(command).await
+            }
+            CairoVersionedInput::Pie(_input) => {
+                for path in &[
+                    paths.trace_file,
+                    paths.memory_file,
+                    paths.public_input_file,
+                    paths.private_input_file,
+                    paths.program_input_path,
+                    paths.program,
+                ] {
+                    std::fs::File::create(path)?;
+                }
+                trace!("Running pie-run");
+                const BOOTLOADER_PROGRAM: &[u8] =
+                    include_bytes!("../../bootloader/madara-bootloader.json");
+                let bootloader_program =
+                    Program::from_bytes(BOOTLOADER_PROGRAM, Some("main")).unwrap();
+                let pies = vec![_input.pie_zip.clone()];
+                let bootloader_tasks = make_bootloader_tasks(&pies);
+                let execution_artifacts =
+                    run_bootloader_in_proof_mode(&bootloader_program, bootloader_tasks).unwrap();
+                write_json_to_file(execution_artifacts.public_input, paths.public_input_file)
+                    .unwrap();
+                let private_input_serializable: bootloader_cairo_vm::air_private_input::AirPrivateInputSerializable = execution_artifacts.private_input.to_serializable(
+                    paths.trace_file.to_string_lossy().to_string(),
+                    paths.memory_file.to_string_lossy().to_string(),
+                );
+                write_json_to_file(private_input_serializable, paths.private_input_file).unwrap();
+                std::fs::write(paths.memory_file, execution_artifacts.memory).unwrap();
+                std::fs::write(paths.trace_file, execution_artifacts.trace).unwrap();
+                Ok(())
             }
         }
     }
@@ -149,6 +188,20 @@ pub fn prepare_input(felts: &[Felt]) -> String {
         .trim_end()
         .to_string()
         + "]"
+}
+
+fn make_bootloader_tasks(pies: &[Vec<u8>]) -> Vec<TaskSpec> {
+    let cairo_pie_tasks = pies
+        .iter()
+        .map(|pie_bytes| {
+            let pie = CairoPie::from_bytes(pie_bytes);
+            pie.map(|pie| TaskSpec {
+                task: Task::Pie(pie),
+            })
+            .unwrap()
+        })
+        .collect();
+    cairo_pie_tasks
 }
 
 #[test]

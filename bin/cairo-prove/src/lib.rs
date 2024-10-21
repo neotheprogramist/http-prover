@@ -13,6 +13,7 @@ pub mod prove;
 pub enum CairoVersion {
     V0,
     V1,
+    PIE,
 }
 
 impl FromStr for CairoVersion {

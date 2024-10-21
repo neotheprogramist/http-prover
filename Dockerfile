@@ -3,7 +3,7 @@ RUN rustup install 1.79.0
 RUN rustup component add cargo clippy rust-docs rust-std rustc rustfmt
 
 # Use apk for package management in Alpine
-RUN apk add --no-cache build-base libressl-dev
+RUN apk add --no-cache build-base libressl-dev protobuf
 RUN cargo install cargo-chef
 
 FROM chef AS planner
@@ -32,7 +32,7 @@ FROM python:3.9.18-slim-bookworm AS final
 
 WORKDIR /
 
-RUN apt update && apt install -y build-essential libgmp-dev elfutils jq git
+RUN apt update && apt install -y build-essential libgmp-dev elfutils jq git protobuf-compiler
 RUN pip install --upgrade pip
 
 RUN git clone --depth=1 -b v2.7.0-rc.3 https://github.com/starkware-libs/cairo.git

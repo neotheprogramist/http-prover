@@ -1,6 +1,6 @@
 use crate::{access_key::ProverAccessKey, errors::SdkErrors, sdk_builder::ProverSDKBuilder};
 use common::{
-    prover_input::{Cairo0ProverInput, CairoProverInput, ProverInput},
+    prover_input::{Cairo0ProverInput, CairoProverInput, PieProverInput, ProverInput},
     requests::AddKeyRequest,
 };
 use ed25519_dalek::{ed25519::signature::SignerMut, VerifyingKey};
@@ -14,6 +14,7 @@ pub struct ProverSDK {
     pub client: Client,
     pub prover_cairo0: Url,
     pub prover_cairo: Url,
+    pub pie: Url,
     pub verify: Url,
     pub get_job: Url,
     pub register: Url,
@@ -50,6 +51,9 @@ impl ProverSDK {
     pub async fn prove_cairo(&self, data: CairoProverInput) -> Result<u64, SdkErrors> {
         self.prove(ProverInput::Cairo(data), self.prover_cairo.clone())
             .await
+    }
+    pub async fn prove_pie(&self, data: PieProverInput) -> Result<u64, SdkErrors> {
+        self.prove(ProverInput::Pie(data), self.pie.clone()).await
     }
 
     async fn prove(&self, data: ProverInput, url: Url) -> Result<u64, SdkErrors> {
