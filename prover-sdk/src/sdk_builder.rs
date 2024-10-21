@@ -157,6 +157,7 @@ impl ProverSDKBuilder {
             client,
             prover_cairo0: self.base_url.join("prove/cairo0")?,
             prover_cairo: self.base_url.join("prove/cairo")?,
+            pie: self.base_url.join("prove/pie")?,
             verify: self.base_url.join("verify")?,
             get_job: self.base_url.join("get-job")?,
             register: self.base_url.join("register")?,

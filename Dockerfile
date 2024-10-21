@@ -3,7 +3,7 @@ RUN rustup install 1.79.0
 RUN rustup component add cargo clippy rust-docs rust-std rustc rustfmt
 
 # Use apk for package management in Alpine
-RUN apk add --no-cache build-base libressl-dev
+RUN apk add --no-cache build-base libressl-dev protobuf
 RUN cargo install cargo-chef
 
 FROM chef AS planner
@@ -18,7 +18,6 @@ WORKDIR /app
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
 RUN cargo chef cook --release --recipe-path recipe.json
-RUN cargo install --git https://github.com/lambdaclass/cairo-vm --rev ed3117098dd33c96056880af6fa67f9b2caebfb4 cairo1-run
 RUN cargo build --release -p prover
 
 # Build application
@@ -33,7 +32,7 @@ FROM python:3.9.18-slim-bookworm AS final
 
 WORKDIR /
 
-RUN apt update && apt install -y build-essential libgmp-dev elfutils jq git
+RUN apt update && apt install -y build-essential libgmp-dev elfutils jq git protobuf-compiler
 RUN pip install --upgrade pip
 
 RUN git clone --depth=1 -b v2.7.0-rc.3 https://github.com/starkware-libs/cairo.git
@@ -44,7 +43,6 @@ RUN pip install cairo-lang==0.13.1
 RUN pip install sympy==1.12.1
 
 COPY --from=builder /app/target/release/prover /usr/local/bin/prover
-COPY --from=builder /usr/local/cargo/bin/cairo1-run /usr/local/bin/cairo1-run
 COPY --from=prover /usr/bin/cpu_air_prover /usr/local/bin/cpu_air_prover
 COPY --from=prover /usr/bin/cpu_air_verifier /usr/local/bin/cpu_air_verifier
 

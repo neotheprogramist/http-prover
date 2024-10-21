@@ -3,15 +3,16 @@ use crate::validate_input;
 use crate::Args;
 use crate::CairoVersion;
 use prover_sdk::sdk::ProverSDK;
+use prover_sdk::PieProverInput;
 use prover_sdk::{
     Cairo0CompiledProgram, Cairo0ProverInput, CairoCompiledProgram, CairoProverInput,
 };
 use serde_json::Value;
 
 pub async fn prove(args: Args, sdk: ProverSDK) -> Result<u64, ProveErrors> {
-    let program = std::fs::read_to_string(&args.program_path)?;
     let proof = match args.cairo_version {
         CairoVersion::V0 => {
+            let program = std::fs::read_to_string(&args.program_path)?;
             let input_path = args
                 .program_input_path
                 .ok_or(ProveErrors::MissingProgramInput)?;
@@ -28,6 +29,7 @@ pub async fn prove(args: Args, sdk: ProverSDK) -> Result<u64, ProveErrors> {
             sdk.prove_cairo0(data).await?
         }
         CairoVersion::V1 => {
+            let program = std::fs::read_to_string(&args.program_path)?;
             let input = match args.clone().program_input_path {
                 Some(input_path) => {
                     let input = std::fs::read_to_string(input_path)?;
@@ -44,6 +46,16 @@ pub async fn prove(args: Args, sdk: ProverSDK) -> Result<u64, ProveErrors> {
                 n_queries: args.n_queries,
             };
             sdk.prove_cairo(data).await?
+        }
+        CairoVersion::PIE => {
+            let pie = std::fs::read(&args.program_path)?;
+            let pie_input = PieProverInput {
+                pie_zip: pie,
+                layout: args.layout,
+                pow_bits: args.pow_bits,
+                n_queries: args.n_queries,
+            };
+            sdk.prove_pie(pie_input).await?
         }
     };
     Ok(proof)

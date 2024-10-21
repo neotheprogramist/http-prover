@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod cairo1_run;
 pub mod errors;
 pub mod extractors;
 pub mod prove;
@@ -7,9 +8,8 @@ pub mod sse;
 pub mod threadpool;
 pub mod utils;
 pub mod verifier;
-use std::path::PathBuf;
-
 use clap::{arg, Parser};
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
